@@ -2,6 +2,12 @@
 
 import sys
 
+def int_to_bytes(i):
+    if i > 2 ** 16:
+        print 'Number too large'
+        exit(1)
+    return chr(i >> 8) + chr(i & 0xff)
+
 if len(sys.argv) != 3:
     print 'Usage:', sys.argv[0], '<file> <device>'
     exit(1)
@@ -16,17 +22,16 @@ except Exception as e:
     print 'Error reading file:', e
     exit(1)
 
+vendor_id = int_to_bytes(0xbabe)
+name = 'foo'
 size = len(elffile_contents)
-
-if size > 2 ** 16:
-    print 'File too large'
-    exit(1)
-
-size_bytes = chr(size >> 8) + chr(size & 0xff)
+size_bytes = int_to_bytes(size)
 
 try:
     with open(devfile_name, 'w') as f:
         f.write('\x01')
+        f.write(name + '\x00')
+        f.write(vendor_id)
         f.write(size_bytes)
         f.write(elffile_contents)
 except Exception as e:

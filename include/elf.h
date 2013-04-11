@@ -3,13 +3,10 @@
 
 #include <stddef.h>
 
-typedef struct
-{
-    void* pmem;
-    void* dmem;
-} ElfModule;
+typedef struct ElfModule ElfModule;
 
-int elf_load(void* file, size_t size, ElfModule* em);
+
+ElfModule* elf_load(void* file);
 void elf_unload(ElfModule* em);
 
 #endif

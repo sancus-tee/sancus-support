@@ -8,6 +8,13 @@
 #include <string.h>
 #include <stdlib.h>
 
+
+struct ElfModule
+{
+    void* pmem;
+    void* dmem;
+};
+
 typedef struct __attribute__((packed))
 {
     unsigned char e_ident[16];
@@ -68,6 +75,11 @@ typedef struct __attribute__((packed))
     unsigned char st_other;
     uint16_t      st_shndx;
 } SymtabEntry;
+
+// special shndx values
+#define SHN_UNDEF     0x0000
+#define SHN_LORESERVE 0xff00
+#define SHN_ABS       0xfff1
 
 // accessors to 'bind' and 'type' from st_info
 #define ST_BIND(i) ((i) >> 4)
@@ -141,6 +153,12 @@ static int should_allocate(SectionHeader* sh)
     return (sh->sh_flags & SHF_ALLOC) && sh->sh_size > 0;
 }
 
+static int should_allocate_pmem(SectionHeader* sh)
+{
+    // allocate in program memory if executable or not writeable
+    return (sh->sh_flags & SHF_EXECINSTR) || !(sh->sh_flags & SHF_WRITE);
+}
+
 // loads all sections in memory and returns an array of the load addresses
 // the sections that aren't loaded will have a load address of NULL
 // the caller should free the returned array
@@ -163,10 +181,10 @@ static void** load_sections(Elf32Header* eh, ElfModule* em)
     {
         if (should_allocate(sh))
         {
-            if (sh->sh_flags & SHF_WRITE) // section should be writeable
-                dmem_size += sh->sh_size;
-            else
+            if (should_allocate_pmem(sh))
                 pmem_size += sh->sh_size;
+            else
+                dmem_size += sh->sh_size;
         }
     }
 
@@ -213,15 +231,15 @@ static void** load_sections(Elf32Header* eh, ElfModule* em)
             void* src = (char*)eh + sh->sh_offset;
             void* dest;
 
-            if (sh->sh_flags & SHF_WRITE)
-            {
-                dest = dmem_next;
-                dmem_next += sh->sh_size;
-            }
-            else
+            if (should_allocate_pmem(sh))
             {
                 dest = pmem_next;
                 pmem_next += sh->sh_size;
+            }
+            else
+            {
+                dest = dmem_next;
+                dmem_next += sh->sh_size;
             }
 
             if (sh->sh_type != SHT_NOBITS)
@@ -248,6 +266,40 @@ static void** load_sections(Elf32Header* eh, ElfModule* em)
     em->pmem = pmem_start;
     em->dmem = dmem_start;
     return addresses;
+}
+
+static void* get_local_symbol_value(SymtabEntry* sym, void** addresses)
+{
+    void* sym_addr;
+    if (sym->st_shndx == SHN_UNDEF)
+    {
+        // global symbol
+        return NULL;
+    }
+    else if (sym->st_shndx == SHN_ABS)
+    {
+        // absolute value; should fit in 16 bits
+        if (sym->st_value > 0xffff)
+        {
+            puts("Absolute value too large");
+            return NULL;
+        }
+
+        sym_addr = (void*)(uint16_t)sym->st_value;
+    }
+    else if (sym->st_shndx < SHN_LORESERVE)
+    {
+        // local symbol
+        sym_addr = (char*)addresses[sym->st_shndx] + // section address
+                   sym->st_value; // symbol offset in section
+    }
+    else
+    {
+        printf("Unhandled symbol type: %u\n", sym->st_shndx);
+        return NULL;
+    }
+
+    return sym_addr;
 }
 
 static int relocate_section(Elf32Header* eh, SectionHeader* rela_sh,
@@ -284,30 +336,25 @@ static int relocate_section(Elf32Header* eh, SectionHeader* rela_sh,
         void* rel_addr = base_addr + re->r_offset;
 
         // address to write (symbol value)
-        void* sym_addr;
-        if (sym->st_shndx == 0)
+        char* sym_base;
+        if (sym->st_shndx == SHN_UNDEF)
         {
-            // global symbol
-            sym_addr =
+            sym_base =
                 get_global_symbol_value(get_symbol_name(eh, symtab_sh, sym));
         }
         else
-        {
-            // local symbol
-            sym_addr = (char*)addresses[sym->st_shndx] + // section address
-                       sym->st_value + // symbol offset in section
-                       re->r_addend; // addend
-        }
+            sym_base = get_local_symbol_value(sym, addresses);
 
-        if (sym_addr == NULL)
+        if (sym_base == NULL)
         {
-            printf("Undefined reference to symbol '%s'",
+            printf("Undefined reference to symbol '%s'\n",
                    get_symbol_name(eh, symtab_sh, sym));
             return 0;
         }
 
-        unsigned char rel_type = R_TYPE(re->r_info);
+        void* sym_addr = sym_base + re->r_addend;
 
+        unsigned char rel_type = R_TYPE(re->r_info);
         if (rel_type == R_MSP430_16 || rel_type == R_MSP430_16_BYTE)
         {
             // I have no idea what the difference between these two is; they
@@ -325,6 +372,8 @@ static int relocate_section(Elf32Header* eh, SectionHeader* rela_sh,
                rel_addr, get_symbol_name(eh, symtab_sh, sym), re->r_addend,
                get_section_name(eh, ref_sh), sym->st_value, sym_addr);
     }
+
+    return 1;
 }
 
 static int relocate_sections(Elf32Header* eh, void** addresses)
@@ -345,30 +394,69 @@ static int relocate_sections(Elf32Header* eh, void** addresses)
     }
 }
 
-int elf_load(void* file, size_t size, ElfModule* em)
+static int should_add_symbol(SymtabEntry* sym)
+{
+    if (ST_BIND(sym->st_info) == STB_LOCAL)
+        return 0;
+
+    unsigned char type = ST_TYPE(sym->st_info);
+    if (type != STT_FUNC && type != STT_OBJECT && type != STT_NOTYPE)
+        return 0;
+
+    if (sym->st_shndx == 0)
+        return 0;
+
+    return 1;
+}
+
+static int update_global_symtab(Elf32Header* eh, ElfModule* em,
+                                void** addresses)
+{
+    SectionHeader* sh;
+    for (sh = get_sh_begin(eh); sh != get_sh_end(eh); sh++)
+    {
+        if (sh->sh_type != SHT_SYMTAB)
+            continue;
+
+        SymtabEntry* sym_begin = (SymtabEntry*)((char*)eh + sh->sh_offset);
+        SymtabEntry* sym_end = sym_begin + sh->sh_size / sizeof(SymtabEntry);
+        SymtabEntry* sym;
+        for (sym = sym_begin; sym != sym_end; sym++)
+        {
+            if (should_add_symbol(sym))
+            {
+                const char* name = get_symbol_name(eh, sh, sym);
+                void* value = get_local_symbol_value(sym, addresses);
+                add_global_symbol(name, value, em);
+                printf("Added global symbol %s: %p\n", name, value);
+            }
+        }
+    }
+}
+
+ElfModule* elf_load(void* file)
 {
     Elf32Header* eh = file;
 
-
     // start with some sanity checks
-    if (memcmp(eh->e_ident, magic, sizeof(magic)) != 0)
-    {
-        puts("Wrong magic");
-        return 1;
-    }
+    /*if (memcmp(eh->e_ident, magic, sizeof(magic)) != 0)*/
+    /*{*/
+        /*puts("Wrong magic");*/
+        /*return NULL;*/
+    /*}*/
 
     // check if this is a relocatable file
     if (eh->e_type != 0x01)
     {
         puts("Not relocatable");
-        return 1;
+        return NULL;
     }
 
     // check if this is a binary for the MSP430
     if (eh->e_machine != 0x69)
     {
         puts("Wrong architecture");
-        return 1;
+        return NULL;
     }
 
     // I would have no idea what to do if the reported section header size does
@@ -376,14 +464,14 @@ int elf_load(void* file, size_t size, ElfModule* em)
     if (eh->e_shentsize != sizeof(SectionHeader))
     {
         puts("Weird section header size");
-        return 1;
+        return NULL;
     }
 
     // check if there are sections
     if (eh->e_shoff == 0)
     {
         puts("No section headers");
-        return 1;
+        return NULL;
     }
 
     unsigned i;
@@ -394,13 +482,38 @@ int elf_load(void* file, size_t size, ElfModule* em)
                i, get_section_name(eh, sh), sh->sh_type);
     }
 
+    ElfModule* em = malloc(sizeof(ElfModule));
+    if (em == NULL)
+    {
+        puts("Out of memory");
+        return NULL;
+    }
+
     puts("Loading sections...");
     void** addresses = load_sections(eh, em);
     if (addresses == NULL)
-        return 1;
+    {
+        free(em);
+        return NULL;
+    }
 
-    relocate_sections(eh, addresses);
+    if (!relocate_sections(eh, addresses))
+    {
+        elf_unload(em);
+        free(addresses);
+        return NULL;
+    }
+
+    update_global_symtab(eh, em, addresses);
     free(addresses);
-    return 0;
+    return em;
+}
+
+void elf_unload(ElfModule* em)
+{
+    remove_global_symbols(em);
+    pmem_free(em->pmem);
+    free(em->dmem);
+    free(em);
 }
 
