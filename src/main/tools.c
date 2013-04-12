@@ -4,6 +4,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 uint16_t read_int(void)
 {
@@ -42,5 +43,24 @@ char* read_string(void)
         if (c == '\0')
             return str;
     }
+}
+
+void print_data(const unsigned char* data, size_t size)
+{
+    int need_nl;
+    unsigned i;
+    for (i = 0; i < size; i++)
+    {
+        need_nl = 1;
+        printf("%02x ", data[i]);
+        if ((i + 1) % 26 == 0)
+        {
+            printf("\n");
+            need_nl = 0;
+        }
+    }
+
+    if (need_nl)
+        printf("\n");
 }
 

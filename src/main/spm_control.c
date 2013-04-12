@@ -11,6 +11,12 @@
 
 #include <spm-support.h>
 
+/*#define NO_PROTECT*/
+
+#ifdef NO_PROTECT
+static spm_id next_id = 1;
+#endif
+
 typedef struct SpmList
 {
     struct Spm      spm;
@@ -20,7 +26,22 @@ typedef struct SpmList
 
 SpmList* spm_head = NULL;
 
-static void* get_spm_symbol(char* spm_name, char* which)
+static struct Spm* find_spm(spm_id id)
+{
+    SpmList* current = spm_head;
+    while (current != NULL && current->spm.id != id)
+        current = current->next;
+
+    if (current == NULL)
+    {
+        printf("No SPM with ID 0x%x\n", id);
+        return NULL;
+    }
+
+    return &current->spm;
+}
+
+static void* get_spm_symbol(const char* spm_name, char* which)
 {
     char* name = malloc(strlen("__spm_") + strlen(spm_name) +
                         strlen(which) + 2);
@@ -67,6 +88,9 @@ static int register_spm(char* name, uint16_t vendor_id, ElfModule* em)
         return 0;
     }
 
+#ifdef NO_PROTECT
+    spm->id = next_id++;
+#else
     if (!protect_spm(spm))
     {
         puts("Protecting SPM failed");
@@ -74,6 +98,7 @@ static int register_spm(char* name, uint16_t vendor_id, ElfModule* em)
         *current = NULL;
         return 0;
     }
+#endif
 
     printf("Registered SPM %s with id 0x%x for vendor 0x%x\n",
            name, spm->id, vendor_id);
@@ -105,15 +130,8 @@ void spm_load(void)
     uart_read(file, size);
     printf("Accepted SPM %s for vendor %u\n", name, vendor_id);
     printf("Read %u bytes:\n", size);
-    unsigned i;
-    for (i = 0; i < size; i++)
-    {
-        printf("%02x ", file[i]);
-        if ((i + 1) % 26 == 0)
-            printf("\n");
-    }
-
-    printf("\nLoading...\n");
+    print_data(file, size);
+    printf("Loading...\n");
 
     ElfModule* em = elf_load(file);
     free(file);
@@ -183,19 +201,7 @@ void spm_call(void)
     uint16_t index = read_int();
     uint16_t nargs = read_int();
 
-    SpmList* current = spm_head;
-    while (current != NULL && current->spm.id != id)
-        current = current->next;
-
-    if (current == NULL)
-    {
-        printf("No SPM with ID 0x%x\n", id);
-        return;
-    }
-
     CallInfo ci;
-    ci.entry = current->spm.public_start;
-    ci.index = index;
     void* arg_buf = NULL;
 
     switch (nargs)
@@ -248,10 +254,33 @@ void spm_call(void)
             break;
     }
 
+    struct Spm* spm = find_spm(id);
+    if (spm == NULL)
+        return;
+
+    ci.entry = spm->public_start;
+    ci.index = index;
+
     printf("Accepted call to SPM %s, index %u, args %u\n",
-           current->spm.name, index, nargs);
+           spm->name, index, nargs);
 
     enter_spm(&ci);
     free(arg_buf);
+}
+
+void spm_print_identity(void)
+{
+    spm_id id = read_int();
+    struct Spm* spm = find_spm(id);
+    if (spm == NULL)
+        return;
+
+    printf("Identity of SPM %s:\n", spm->name);
+    print_data(spm->public_start,
+               (char*)spm->public_end - (char*)spm->public_start);
+    print_data((char*)&spm->public_start, 2);
+    print_data((char*)&spm->public_end, 2);
+    print_data((char*)&spm->secret_start, 2);
+    print_data((char*)&spm->secret_end, 2);
 }
 

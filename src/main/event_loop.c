@@ -5,14 +5,26 @@
 #include "spm_control.h"
 #include "uart.h"
 #include "global_symtab.h"
+#include "tools.h"
 
 typedef enum
 {
-    Echo =   0x00,
-    Load =   0x01,
-    Call =   0x02,
-    Symtab = 0x03
+    Echo        = 0x00,
+    SpmLoad     = 0x01,
+    SpmCall     = 0x02,
+    SpmIdentity = 0x03,
+    LoadData    = 0x04,
+    Symtab      = 0x05
 } Command;
+
+static void load_data(void)
+{
+    void* address = (void*)read_int();
+    size_t size = read_int();
+    uart_read(address, size);
+    printf("Loaded data at address %p:\n", address);
+    print_data(address, size);
+}
 
 void event_loop_start(void)
 {
@@ -26,12 +38,20 @@ void event_loop_start(void)
                 uart_write_byte(uart_read_byte());
                 break;
 
-            case Load:
+            case SpmLoad:
                 spm_load();
                 break;
 
-            case Call:
+            case SpmCall:
                 spm_call();
+                break;
+
+            case SpmIdentity:
+                spm_print_identity();
+                break;
+
+            case LoadData:
+                load_data();
                 break;
 
             case Symtab:

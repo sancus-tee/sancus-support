@@ -61,7 +61,7 @@ void* get_global_symbol_value(const char* name)
         current = current->next;
     }
 
-    return NULL;
+    return UNDEFINED_SYMBOL;
 }
 
 int add_global_symbol(const char* name, void* value, ElfModule* owner)
@@ -111,7 +111,7 @@ void remove_global_symbols(ElfModule* owner)
 
 static void print_symbol(const Symbol* sym)
 {
-    printf("%s: %p\n", sym->name, sym->value);
+    printf("%s = %p;\n", sym->name, sym->value);
 }
 
 void print_global_symbols(void)
@@ -126,5 +126,7 @@ void print_global_symbols(void)
         print_symbol(&current->symbol);
         current = current->next;
     }
+
+    putchar('\n');
 }
 

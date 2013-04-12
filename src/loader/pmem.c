@@ -14,6 +14,11 @@ void* pmem_malloc(size_t size)
 
     void* ret = (void*)heap;
     heap += size;
+
+    // make sure the heap stays aligned
+    if (heap % 2 == 1)
+        heap++;
+
     return ret;
 }
 

@@ -3,6 +3,7 @@
 
 void spm_load(void);
 void spm_call(void);
+void spm_print_identity(void);
 
 #endif
 

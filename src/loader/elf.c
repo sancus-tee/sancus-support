@@ -345,7 +345,7 @@ static int relocate_section(Elf32Header* eh, SectionHeader* rela_sh,
         else
             sym_base = get_local_symbol_value(sym, addresses);
 
-        if (sym_base == NULL)
+        if (sym_base == UNDEFINED_SYMBOL)
         {
             printf("Undefined reference to symbol '%s'\n",
                    get_symbol_name(eh, symtab_sh, sym));
