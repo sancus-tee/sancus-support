@@ -55,7 +55,7 @@ void event_loop_start(void)
                 break;
 
             case Symtab:
-                print_global_symbols();
+                print_global_symbols(uart_printf);
                 break;
 
             default:

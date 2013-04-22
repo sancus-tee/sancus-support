@@ -41,11 +41,7 @@ int main()
     __eint();
 
     puts("main() started");
-    /*rom[10] = 'A';*/
-    /*putchar(rom[10]);*/
-    /*putchar('\n');*/
-    strcpy(&_etext, "test");
-    printf("End of ROM: %x, %s\n", &_etext, &_etext);
+    printf("End of ROM: %x\n", &_etext);
     event_loop_start();
     puts("main() done");
     while (1) {}
@@ -54,9 +50,9 @@ int main()
 int putchar(int c)
 {
     if (c == '\n')
-        uart_write_byte('\r');
+        uart2_write_byte('\r');
 
-    uart_write_byte(c);
+    uart2_write_byte(c);
     return c;
 }
 

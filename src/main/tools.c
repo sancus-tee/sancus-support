@@ -64,3 +64,17 @@ void print_data(const unsigned char* data, size_t size)
         printf("\n");
 }
 
+static int uart_putchar(int c)
+{
+    uart_write_byte(c);
+    return c;
+}
+
+int uart_printf(const char* str, ...)
+{
+    va_list ap;
+    va_start(ap, str);
+    vuprintf(uart_putchar, str, ap);
+    va_end(ap);
+}
+

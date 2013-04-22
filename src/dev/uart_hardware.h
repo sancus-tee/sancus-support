@@ -5,12 +5,17 @@
 // Hardware UART register address mapping
 //--------------------------------------------------
 
-#define UART_CTL  (*(volatile unsigned char*) 0x0080)
-#define UART_STAT (*(volatile unsigned char*) 0x0081)
-#define UART_BAUD (*(volatile unsigned int*)  0x0082)
-#define UART_TXD  (*(volatile unsigned char*) 0x0084)
-#define UART_RXD  (*(volatile unsigned char*) 0x0085)
+#define UART_CTL   (*(volatile unsigned char*) 0x0080)
+#define UART_STAT  (*(volatile unsigned char*) 0x0081)
+#define UART_BAUD  (*(volatile unsigned int*)  0x0082)
+#define UART_TXD   (*(volatile unsigned char*) 0x0084)
+#define UART_RXD   (*(volatile unsigned char*) 0x0085)
 
+#define UART2_CTL  (*(volatile unsigned char*) 0x0088)
+#define UART2_STAT (*(volatile unsigned char*) 0x0089)
+#define UART2_BAUD (*(volatile unsigned int*)  0x008a)
+#define UART2_TXD  (*(volatile unsigned char*) 0x008c)
+#define UART2_RXD  (*(volatile unsigned char*) 0x008d)
 //--------------------------------------------------
 // Hardware UART register field mapping
 //--------------------------------------------------

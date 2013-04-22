@@ -109,24 +109,24 @@ void remove_global_symbols(ElfModule* owner)
     }
 }
 
-static void print_symbol(const Symbol* sym)
+static void print_symbol(const Symbol* sym, print_func pf)
 {
-    printf("%s = %p;\n", sym->name, sym->value);
+    pf("%s = %p;\n", sym->name, sym->value);
 }
 
-void print_global_symbols(void)
+void print_global_symbols(print_func pf)
 {
     unsigned i;
     for (i = 0; i < sizeof(symbols) / sizeof(Symbol); i++)
-        print_symbol(&symbols[i]);
+        print_symbol(&symbols[i], pf);
 
     SymbolList* current = dynamic_symbols_head;
     while (current != NULL)
     {
-        print_symbol(&current->symbol);
+        print_symbol(&current->symbol, pf);
         current = current->next;
     }
 
-    putchar('\n');
+    pf("\n");
 }
 
