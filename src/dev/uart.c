@@ -14,6 +14,11 @@ void uart_init(void )
     UART2_CTL = UART_EN;
 }
 
+int uart_available(void)
+{
+    return data_ready;
+}
+
 void uart_write_byte(unsigned char b)
 {
     // wait while TX buffer is full

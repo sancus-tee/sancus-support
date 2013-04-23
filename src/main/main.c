@@ -5,6 +5,7 @@
 
 #include "timer.h"
 #include "uart.h"
+#include "ps2.h"
 
 #include "event_loop.h"
 
@@ -33,11 +34,18 @@ void init_io()
     P3SEL = 0;
 }
 
+void keypress(scancode_t sc)
+{
+    uint8_t data[] = {0x00, sc, 0x00};
+    uart_write(data, sizeof(data));
+}
+
 int main()
 {
     init_io();
     timer_init();
     uart_init();
+    ps2_init(keypress);
     __eint();
 
     puts("main() started");
