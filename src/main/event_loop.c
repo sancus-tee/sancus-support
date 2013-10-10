@@ -4,7 +4,7 @@
 #include <msp430.h>
 
 
-#include "spm_control.h"
+#include "sm_control.h"
 #include "uart.h"
 #include "global_symtab.h"
 #include "tools.h"
@@ -13,12 +13,12 @@ uint8_t key_pressed = 0;
 
 typedef enum
 {
-    Echo        = 0x00,
-    SpmLoad     = 0x01,
-    SpmCall     = 0x02,
-    SpmIdentity = 0x03,
-    LoadData    = 0x04,
-    Symtab      = 0x05
+    Echo       = 0x00,
+    SmLoad     = 0x01,
+    SmCall     = 0x02,
+    SmIdentity = 0x03,
+    LoadData   = 0x04,
+    Symtab     = 0x05
 } Command;
 
 static void load_data(void)
@@ -39,16 +39,16 @@ static void handle_command(void)
             uart_write_byte(uart_read_byte());
             break;
 
-        case SpmLoad:
-            spm_load();
+        case SmLoad:
+            sm_load();
             break;
 
-        case SpmCall:
-            spm_call();
+        case SmCall:
+            sm_call();
             break;
 
-        case SpmIdentity:
-            spm_print_identity();
+        case SmIdentity:
+            sm_print_identity();
             break;
 
         case LoadData:

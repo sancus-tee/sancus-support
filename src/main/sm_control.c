@@ -1,4 +1,4 @@
-#include "spm_control.h"
+#include "sm_control.h"
 
 #include "uart.h"
 #include "elf.h"
@@ -9,27 +9,27 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <spm-support.h>
+#include <sancus/sm_support.h>
 
 /*#define NO_PROTECT*/
 
 #ifdef NO_PROTECT
-static spm_id next_id = 1;
+static sm_id next_id = 1;
 #endif
 
-typedef struct SpmList
+typedef struct SmList
 {
-    struct Spm      spm;
-    ElfModule*      em;
-    struct SpmList* next;
-} SpmList;
+    struct SancusModule sm;
+    ElfModule*          em;
+    struct SmList*      next;
+} SmList;
 
-SpmList* spm_head = NULL;
+SmList* sm_head = NULL;
 
-static struct Spm* find_spm(spm_id id)
+static struct SancusModule* find_sm(sm_id id)
 {
-    SpmList* current = spm_head;
-    while (current != NULL && current->spm.id != id)
+    SmList* current = sm_head;
+    while (current != NULL && current->sm.id != id)
         current = current->next;
 
     if (current == NULL)
@@ -38,18 +38,18 @@ static struct Spm* find_spm(spm_id id)
         return NULL;
     }
 
-    return &current->spm;
+    return &current->sm;
 }
 
-static void* get_spm_symbol(const char* spm_name, char* which)
+static void* get_sm_symbol(const char* sm_name, char* which)
 {
-    char* name = malloc(strlen("__spm_") + strlen(spm_name) +
+    char* name = malloc(strlen("__sm_") + strlen(sm_name) +
                         strlen(which) + 2);
     if (name == NULL)
         return NULL;
 
-    strcpy(name, "__spm_");
-    strcat(name, spm_name);
+    strcpy(name, "__sm_");
+    strcat(name, sm_name);
     strcat(name, "_");
     strcat(name, which);
     void* sym = get_global_symbol_value(name);
@@ -57,30 +57,30 @@ static void* get_spm_symbol(const char* spm_name, char* which)
     return sym;
 }
 
-static int register_spm(char* name, uint16_t vendor_id, ElfModule* em)
+static int register_sm(char* name, uint16_t vendor_id, ElfModule* em)
 {
-    SpmList** current = &spm_head;
+    SmList** current = &sm_head;
     while (*current != NULL)
         current = &(*current)->next;
 
-    *current = malloc(sizeof(SpmList));
+    *current = malloc(sizeof(SmList));
     if (*current == NULL)
         return 0;
 
     (*current)->em = em;
     (*current)->next = NULL;
 
-    struct Spm* spm = &(*current)->spm;
-    spm->id = 0;
-    spm->vendor_id = vendor_id;
-    spm->name = name;
-    spm->public_start = get_spm_symbol(name, "public_start");
-    spm->public_end = get_spm_symbol(name, "public_end");
-    spm->secret_start = get_spm_symbol(name, "secret_start");
-    spm->secret_end = get_spm_symbol(name, "secret_end");
+    struct SancusModule* sm = &(*current)->sm;
+    sm->id = 0;
+    sm->vendor_id = vendor_id;
+    sm->name = name;
+    sm->public_start = get_sm_symbol(name, "public_start");
+    sm->public_end = get_sm_symbol(name, "public_end");
+    sm->secret_start = get_sm_symbol(name, "secret_start");
+    sm->secret_end = get_sm_symbol(name, "secret_end");
 
-    if (spm->public_start == NULL || spm->public_end == NULL ||
-        spm->secret_start == NULL || spm->secret_end == NULL)
+    if (sm->public_start == NULL || sm->public_end == NULL ||
+        sm->secret_start == NULL || sm->secret_end == NULL)
     {
         puts("Failed to find SPM symbols");
         free(*current);
@@ -89,9 +89,9 @@ static int register_spm(char* name, uint16_t vendor_id, ElfModule* em)
     }
 
 #ifdef NO_PROTECT
-    spm->id = next_id++;
+    sm->id = next_id++;
 #else
-    if (!protect_spm(spm))
+    if (!protect_sm(sm))
     {
         puts("Protecting SPM failed");
         free(*current);
@@ -101,13 +101,13 @@ static int register_spm(char* name, uint16_t vendor_id, ElfModule* em)
 #endif
 
     printf("Registered SPM %s with id 0x%x for vendor 0x%x\n",
-           name, spm->id, vendor_id);
-    printf(" - Public: [%p, %p]\n", spm->public_start, spm->public_end);
-    printf(" - Secret: [%p, %p]\n", spm->secret_start, spm->secret_end);
+           name, sm->id, vendor_id);
+    printf(" - Public: [%p, %p]\n", sm->public_start, sm->public_end);
+    printf(" - Secret: [%p, %p]\n", sm->secret_start, sm->secret_end);
     return 1;
 }
 
-void spm_load(void)
+void sm_load(void)
 {
     int error = 0;
     char* name = read_string();
@@ -144,7 +144,7 @@ void spm_load(void)
 
     puts("Module successfully loaded");
 
-    if (!register_spm(name, vendor_id, em))
+    if (!register_sm(name, vendor_id, em))
     {
         puts("Registering SPM failed");
         return;
@@ -164,7 +164,7 @@ typedef struct
 
 // we need a bit of optimization here to make GCC not use all available
 // registers
-static void __attribute__((optimize("-O1"))) enter_spm(CallInfo* ci)
+static void __attribute__((optimize("-O1"))) enter_sm(CallInfo* ci)
 {
     uint16_t args_left = ci->nargs;
 
@@ -195,7 +195,7 @@ static void __attribute__((optimize("-O1"))) enter_spm(CallInfo* ci)
         : "r6", "r7", "r12", "r13", "r14", "r15");
 }
 
-void spm_call(void)
+void sm_call(void)
 {
     uint16_t id = read_int();
     uint16_t index = read_int();
@@ -254,33 +254,33 @@ void spm_call(void)
             break;
     }
 
-    struct Spm* spm = find_spm(id);
-    if (spm == NULL)
+    struct SancusModule* sm = find_sm(id);
+    if (sm == NULL)
         return;
 
-    ci.entry = spm->public_start;
+    ci.entry = sm->public_start;
     ci.index = index;
 
     printf("Accepted call to SPM %s, index %u, args %u\n",
-           spm->name, index, nargs);
+           sm->name, index, nargs);
 
-    enter_spm(&ci);
+    enter_sm(&ci);
     free(arg_buf);
 }
 
-void spm_print_identity(void)
+void sm_print_identity(void)
 {
-    spm_id id = read_int();
-    struct Spm* spm = find_spm(id);
-    if (spm == NULL)
+    sm_id id = read_int();
+    struct SancusModule* sm = find_sm(id);
+    if (sm == NULL)
         return;
 
-    printf("Identity of SPM %s:\n", spm->name);
-    print_data(spm->public_start,
-               (char*)spm->public_end - (char*)spm->public_start);
-    print_data((char*)&spm->public_start, 2);
-    print_data((char*)&spm->public_end, 2);
-    print_data((char*)&spm->secret_start, 2);
-    print_data((char*)&spm->secret_end, 2);
+    printf("Identity of SPM %s:\n", sm->name);
+    print_data(sm->public_start,
+               (char*)sm->public_end - (char*)sm->public_start);
+    print_data((char*)&sm->public_start, 2);
+    print_data((char*)&sm->public_end, 2);
+    print_data((char*)&sm->secret_start, 2);
+    print_data((char*)&sm->secret_end, 2);
 }
 
