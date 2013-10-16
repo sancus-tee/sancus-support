@@ -6,7 +6,7 @@
 typedef uint8_t scancode_t;
 typedef void (*ps2_calback_t)(scancode_t);
 
-int ps2_init(ps2_calback_t cb);
+int ps2_init(ps2_calback_t press, ps2_calback_t release);
 
 #endif
 

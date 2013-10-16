@@ -36,7 +36,13 @@ void init_io()
 
 void keypress(scancode_t sc)
 {
-    uint8_t data[] = {0x00, sc, 0x00};
+    uint8_t data[] = {0x00, sc};
+    uart_write(data, sizeof(data));
+}
+
+void keyrelease(scancode_t sc)
+{
+    uint8_t data[] = {0x01, sc};
     uart_write(data, sizeof(data));
 }
 
@@ -45,7 +51,7 @@ int main()
     init_io();
     timer_init();
     uart_init();
-    ps2_init(keypress);
+    ps2_init(keypress, keyrelease);
     __eint();
 
     puts("main() started");

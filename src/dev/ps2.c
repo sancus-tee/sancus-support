@@ -3,11 +3,13 @@
 
 #include <stdio.h>
 
-ps2_calback_t callback;
+static ps2_calback_t cb_press;
+static ps2_calback_t cb_release;
 
-int ps2_init(ps2_calback_t cb)
+int ps2_init(ps2_calback_t press, ps2_calback_t release)
 {
-    callback = cb;
+    cb_press = press;
+    cb_release = release;
 }
 
 static void __attribute__((interrupt(PS2_RX_VECTOR))) ps2_receive(void)
@@ -16,10 +18,12 @@ static void __attribute__((interrupt(PS2_RX_VECTOR))) ps2_receive(void)
     uint8_t data = PS2_DATA;
     int released = stat & PS2_RELEASED;
 
-    if (!released)
-        callback(data);
+    if (released)
+        cb_release(data);
+    else
+        cb_press(data);
 
     const char* type = released ? "Released" : "Pressed";
-    printf("PS2: %s %02x\n", type, data);
+    printf("PS2: %s %02x (%04x)\n", type, data, stat);
 }
 
