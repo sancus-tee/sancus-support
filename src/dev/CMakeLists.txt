@@ -5,3 +5,4 @@ set(SRC
 )
 
 add_library(dev STATIC ${SRC})
+install(TARGETS dev ARCHIVE DESTINATION ${INSTALL_LIBS_DIR})

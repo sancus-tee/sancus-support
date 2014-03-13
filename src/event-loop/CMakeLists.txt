@@ -4,3 +4,4 @@ set(SRC
 
 add_library(event-loop STATIC ${SRC})
 target_link_libraries(event-loop sm-control tools)
+install(TARGETS event-loop ARCHIVE DESTINATION ${INSTALL_LIBS_DIR})
