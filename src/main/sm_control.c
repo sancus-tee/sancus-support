@@ -91,7 +91,7 @@ static int register_sm(char* name, uint16_t vendor_id, ElfModule* em)
 #ifdef NO_PROTECT
     sm->id = next_id++;
 #else
-    if (!protect_sm(sm))
+    if (!sancus_enable(sm))
     {
         puts("Protecting SPM failed");
         free(*current);
