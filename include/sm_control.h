@@ -1,5 +1,5 @@
-#ifndef MSP_SUPPORT_SPM_CONTROL_H
-#define MSP_SUPPORT_SPM_CONTROL_H
+#ifndef SANCUS_SUPPORT_SPM_CONTROL_H
+#define SANCUS_SUPPORT_SPM_CONTROL_H
 
 void sm_load(void);
 void sm_call(void);

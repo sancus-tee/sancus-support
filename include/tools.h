@@ -1,5 +1,5 @@
-#ifndef MSP_SUPPORT_TOOLS_H
-#define MSP_SUPPORT_TOOLS_H
+#ifndef SANCUS_SUPPORT_TOOLS_H
+#define SANCUS_SUPPORT_TOOLS_H
 
 #include <stdlib.h>
 

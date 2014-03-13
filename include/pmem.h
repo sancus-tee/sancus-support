@@ -1,5 +1,5 @@
-#ifndef MSP_SUPPORT_PMEM_H
-#define MSP_SUPPORT_PMEM_H
+#ifndef SANCUS_SUPPORT_PMEM_H
+#define SANCUS_SUPPORT_PMEM_H
 
 #include <stdlib.h>
 

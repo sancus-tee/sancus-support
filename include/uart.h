@@ -1,5 +1,5 @@
-#ifndef MSP_SUPPORT_UART_H
-#define MSP_SUPPORT_UART_H
+#ifndef SANCUS_SUPPORT_UART_H
+#define SANCUS_SUPPORT_UART_H
 
 #include <stddef.h>
 

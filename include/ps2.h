@@ -1,5 +1,5 @@
-#ifndef MSP_SUPPORT_PS2_H
-#define MSP_SUPPORT_PS2_H
+#ifndef SANCUS_SUPPORT_PS2_H
+#define SANCUS_SUPPORT_PS2_H
 
 #include <stdint.h>
 

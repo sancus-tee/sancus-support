@@ -1,5 +1,5 @@
-#ifndef MSP_SUPPORT_ELF_H
-#define MSP_SUPPORT_ELF_H
+#ifndef SANCUS_SUPPORT_ELF_H
+#define SANCUS_SUPPORT_ELF_H
 
 #include <stddef.h>
 
