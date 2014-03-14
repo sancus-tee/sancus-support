@@ -3,4 +3,6 @@ set(SRC
 )
 
 add_library(tools STATIC ${SRC})
-install(TARGETS tools ARCHIVE DESTINATION ${INSTALL_LIBS_DIR})
+install(TARGETS tools
+        EXPORT ExportTargets
+        ARCHIVE DESTINATION ${INSTALL_LIBS_DIR})

@@ -6,4 +6,6 @@ set(SRC
 
 include_directories(${SANCUS_INCLUDES})
 add_library(loader STATIC ${SRC})
-install(TARGETS loader ARCHIVE DESTINATION ${INSTALL_LIBS_DIR})
+install(TARGETS loader
+        EXPORT ExportTargets
+        ARCHIVE DESTINATION ${INSTALL_LIBS_DIR})
