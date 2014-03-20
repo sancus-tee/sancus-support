@@ -66,13 +66,25 @@ static void handle_command(void)
     printf("Finished command %02x\n", command);
 }
 
-void event_loop_start(void)
+static void dummy_idle_callback(int idle)
 {
+}
+
+void event_loop_start(idle_callback set_idle)
+{
+    if (set_idle == NULL)
+        set_idle = dummy_idle_callback;
+
+    set_idle(1);
     puts("Event loop started");
+
     while (1)
     {
         if (uart_available())
+        {
+            set_idle(0);
             handle_command();
+            set_idle(1);
+        }
     }
 }
-

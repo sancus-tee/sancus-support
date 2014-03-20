@@ -56,7 +56,7 @@ int main()
 
     puts("main() started");
     printf("End of ROM: %x\n", &_etext);
-    event_loop_start();
+    event_loop_start(NULL);
     puts("main() done");
     while (1) {}
 }
