@@ -57,20 +57,23 @@ static void* get_sm_symbol(const char* sm_name, char* which)
     return sym;
 }
 
-static int register_sm(char* name, uint16_t vendor_id, ElfModule* em)
+static void append_sm_list(SmList* sm)
 {
     SmList** current = &sm_head;
+
     while (*current != NULL)
         current = &(*current)->next;
 
-    *current = malloc(sizeof(SmList));
-    if (*current == NULL)
-        return 0;
+    *current = sm;
+    sm->next = NULL;
+}
 
-    (*current)->em = em;
-    (*current)->next = NULL;
+static int register_sm(char* name, uint16_t vendor_id, ElfModule* em)
+{
+    SmList* sm_list = malloc(sizeof(SmList));
+    sm_list->em = em;
 
-    struct SancusModule* sm = &(*current)->sm;
+    struct SancusModule* sm = &sm_list->sm;
     sm->id = 0;
     sm->vendor_id = vendor_id;
     sm->name = name;
@@ -83,8 +86,7 @@ static int register_sm(char* name, uint16_t vendor_id, ElfModule* em)
         sm->secret_start == NULL || sm->secret_end == NULL)
     {
         puts("Failed to find SPM symbols");
-        free(*current);
-        *current = NULL;
+        free(sm_list);
         return 0;
     }
 
@@ -94,16 +96,26 @@ static int register_sm(char* name, uint16_t vendor_id, ElfModule* em)
     if (!sancus_enable(sm))
     {
         puts("Protecting SPM failed");
-        free(*current);
-        *current = NULL;
+        free(sm_list);
         return 0;
     }
 #endif
+
+    append_sm_list(sm_list);
 
     printf("Registered SPM %s with id 0x%x for vendor 0x%x\n",
            name, sm->id, vendor_id);
     printf(" - Public: [%p, %p]\n", sm->public_start, sm->public_end);
     printf(" - Secret: [%p, %p]\n", sm->secret_start, sm->secret_end);
+    return 1;
+}
+
+int sm_register_existing(struct SancusModule* sm)
+{
+    SmList* sm_list = malloc(sizeof(SmList));
+    sm_list->sm = *sm;
+    sm_list->em = NULL;
+    append_sm_list(sm_list);
     return 1;
 }
 
