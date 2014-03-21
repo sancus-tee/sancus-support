@@ -18,7 +18,8 @@ typedef enum
     SmCall     = 0x02,
     SmIdentity = 0x03,
     LoadData   = 0x04,
-    Symtab     = 0x05
+    Symtab     = 0x05,
+    PrintData  = 0x06,
 } Command;
 
 static void load_data(void)
@@ -28,6 +29,22 @@ static void load_data(void)
     uart_read(address, size);
     printf("Loaded data at address %p:\n", address);
     print_data(address, size);
+}
+
+static void print_uart_data(void)
+{
+    unsigned n = read_int();
+    unsigned char* buf = malloc(n);
+
+    unsigned i;
+    for (i = 0; i < n; i++)
+        buf[i] = uart_read_byte();
+
+    for (i = 0; i < n; i++)
+        printf("%02x ", buf[i]);
+    printf("\n");
+
+    free(buf);
 }
 
 static void handle_command(void)
@@ -57,6 +74,10 @@ static void handle_command(void)
 
         case Symtab:
             print_global_symbols(uart_printf);
+            break;
+
+        case PrintData:
+            print_uart_data();
             break;
 
         default:
