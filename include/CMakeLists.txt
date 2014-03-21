@@ -1,13 +1,13 @@
 set(HEADERS
-    elf.h
-    event_loop.h
-    global_symtab.h
-    pmem.h
-    ps2.h
-    sm_control.h
-    timer.h
-    tools.h
-    uart.h
+    sancus_support/elf.h
+    sancus_support/event_loop.h
+    sancus_support/global_symtab.h
+    sancus_support/pmem.h
+    sancus_support/ps2.h
+    sancus_support/sm_control.h
+    sancus_support/timer.h
+    sancus_support/tools.h
+    sancus_support/uart.h
 )
 
 install(FILES ${HEADERS} DESTINATION "${INSTALL_INCLUDES_DIR}/sancus_support")

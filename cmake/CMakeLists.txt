@@ -1,6 +1,16 @@
+# configure config file for the install tree
 file(RELATIVE_PATH REL_INCLUDES_DIR ${INSTALL_CMAKE_DIR} ${INSTALL_INCLUDES_DIR})
-# file(RELATIVE_PATH REL_LIBS_DIR ${INSTALL_CMAKE_DIR} ${INSTALL_LIBS_DIR})
-configure_file(Sancus-SupportConfig.cmake.in Sancus-SupportConfig.cmake @ONLY)
+set(CONF_INSTALL_TREE
+    "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/Sancus-SupportConfig.cmake")
+configure_file(Sancus-SupportConfig.cmake.in ${CONF_INSTALL_TREE} @ONLY)
 
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/Sancus-SupportConfig.cmake"
-        DESTINATION ${INSTALL_CMAKE_DIR})
+# configure config file for the build tree
+message("${CMAKE_CURRENT_BINARY_DIR} -> ${PROJECT_SOURCE_DIR}/include")
+file(RELATIVE_PATH REL_INCLUDES_DIR
+     ${CMAKE_CURRENT_BINARY_DIR} "${PROJECT_SOURCE_DIR}/include")
+configure_file(Sancus-SupportConfig.cmake.in Sancus-SupportConfig.cmake @ONLY)
+export(TARGETS dev dev-timer dev-uart dev-ps2 event-loop loader sm-control tools
+       NAMESPACE sancus_support_
+       FILE "${CMAKE_CURRENT_BINARY_DIR}/ExportTargets.cmake")
+
+install(FILES ${CONF_INSTALL_TREE} DESTINATION ${INSTALL_CMAKE_DIR})

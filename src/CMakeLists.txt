@@ -1,7 +1,7 @@
 find_package(Sancus-Compiler REQUIRED)
 
 set(CMAKE_C_COMPILER msp430-gcc)
-include_directories ("${PROJECT_SOURCE_DIR}/include")
+include_directories ("${PROJECT_SOURCE_DIR}/include/sancus_support")
 add_definitions("-D__MSP430F149__")
 
 add_subdirectory(dev)
