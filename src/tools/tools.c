@@ -13,6 +13,17 @@ uint16_t read_int(void)
     return (msb << 8) | lsb;
 }
 
+void write_int(uint16_t i)
+{
+    uart_write_byte(i >> 8);
+    uart_write_byte(i & 0x00ff);
+}
+
+void write_pointer(const void* ptr)
+{
+    write_int((uint16_t)ptr);
+}
+
 char* read_string(void)
 {
     size_t a_size = 0;
@@ -77,4 +88,3 @@ int uart_printf(const char* str, ...)
     vuprintf(uart_putchar, str, ap);
     va_end(ap);
 }
-
