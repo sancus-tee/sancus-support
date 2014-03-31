@@ -68,7 +68,8 @@ static void append_sm_list(SmList* sm)
     sm->next = NULL;
 }
 
-static int register_sm(char* name, uint16_t vendor_id, ElfModule* em)
+static struct SancusModule* register_sm(char* name, uint16_t vendor_id,
+                                        ElfModule* em)
 {
     SmList* sm_list = malloc(sizeof(SmList));
     sm_list->em = em;
@@ -87,7 +88,7 @@ static int register_sm(char* name, uint16_t vendor_id, ElfModule* em)
     {
         puts("Failed to find SPM symbols");
         free(sm_list);
-        return 0;
+        return NULL;
     }
 
 #ifdef NO_PROTECT
@@ -97,7 +98,7 @@ static int register_sm(char* name, uint16_t vendor_id, ElfModule* em)
     {
         puts("Protecting SPM failed");
         free(sm_list);
-        return 0;
+        return NULL;
     }
 #endif
 
@@ -107,7 +108,7 @@ static int register_sm(char* name, uint16_t vendor_id, ElfModule* em)
            name, sm->id, vendor_id);
     printf(" - Public: [%p, %p]\n", sm->public_start, sm->public_end);
     printf(" - Secret: [%p, %p]\n", sm->secret_start, sm->secret_end);
-    return 1;
+    return sm;
 }
 
 int sm_register_existing(struct SancusModule* sm)
@@ -121,6 +122,7 @@ int sm_register_existing(struct SancusModule* sm)
 
 void sm_load(void)
 {
+    sm_id ret_id = 0;
     int error = 0;
     char* name = read_string();
     if (name == NULL)
@@ -136,7 +138,7 @@ void sm_load(void)
 
         printf("Not enough memory for a %uB module\n", size);
         free(name);
-        return;
+        goto out;
     }
 
     uart_read(file, size);
@@ -151,16 +153,23 @@ void sm_load(void)
     if (em == NULL)
     {
         puts("Error loading module");
-        return;
+        goto out;
     }
 
     puts("Module successfully loaded");
 
-    if (!register_sm(name, vendor_id, em))
+    struct SancusModule* sm = register_sm(name, vendor_id, em);
+
+    if (sm == NULL)
     {
         puts("Registering SPM failed");
-        return;
+        goto out;
     }
+
+    ret_id = sm->id;
+
+out:
+    write_int(ret_id);
 }
 
 typedef struct
