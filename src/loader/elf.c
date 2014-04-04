@@ -80,6 +80,7 @@ typedef struct __attribute__((packed))
 #define SHN_UNDEF     0x0000
 #define SHN_LORESERVE 0xff00
 #define SHN_ABS       0xfff1
+#define SHN_COMMON    0xfff2
 
 // accessors to 'bind' and 'type' from st_info
 #define ST_BIND(i) ((i) >> 4)
@@ -295,7 +296,13 @@ static void* get_local_symbol_value(SymtabEntry* sym, void** addresses)
     }
     else
     {
-        printf("Unhandled symbol type: %u\n", sym->st_shndx);
+        printf("Unhandled symbol type: ");
+
+        if (sym->st_shndx == SHN_COMMON)
+            printf("COMMON\n");
+        else
+            printf("%u\n", sym->st_shndx);
+
         return NULL;
     }
 
