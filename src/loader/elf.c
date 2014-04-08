@@ -160,6 +160,30 @@ static int should_allocate_pmem(SectionHeader* sh)
     return (sh->sh_flags & SHF_EXECINSTR) || !(sh->sh_flags & SHF_WRITE);
 }
 
+static void* align_up(void* ptr, size_t alignment)
+{
+    if (alignment == 0)
+        return ptr;
+
+    uintptr_t addr = (uintptr_t)ptr;
+    size_t mod = addr % alignment;
+
+    if (mod != 0)
+        addr += alignment - mod;
+
+    return (void*)addr;
+}
+
+static size_t get_alloc_size(SectionHeader* sh)
+{
+    // allocate some extra space to be able to align the section
+    size_t align = sh->sh_addralign;
+
+    // align == 0 or 1 means no alignment requirements
+    size_t extra_alloc = align <= 1 ? 0 : align - 1;
+    return sh->sh_size + extra_alloc;
+}
+
 // loads all sections in memory and returns an array of the load addresses
 // the sections that aren't loaded will have a load address of NULL
 // the caller should free the returned array
@@ -182,10 +206,12 @@ static void** load_sections(Elf32Header* eh, ElfModule* em)
     {
         if (should_allocate(sh))
         {
+            size_t alloc_size = get_alloc_size(sh);
+
             if (should_allocate_pmem(sh))
-                pmem_size += sh->sh_size;
+                pmem_size += alloc_size;
             else
-                dmem_size += sh->sh_size;
+                dmem_size += alloc_size;
         }
     }
 
@@ -231,16 +257,17 @@ static void** load_sections(Elf32Header* eh, ElfModule* em)
         {
             void* src = (char*)eh + sh->sh_offset;
             void* dest;
+            size_t alloc_size = get_alloc_size(sh);
 
             if (should_allocate_pmem(sh))
             {
-                dest = pmem_next;
-                pmem_next += sh->sh_size;
+                dest = align_up(pmem_next, sh->sh_addralign);
+                pmem_next += alloc_size;
             }
             else
             {
-                dest = dmem_next;
-                dmem_next += sh->sh_size;
+                dest = align_up(dmem_next, sh->sh_addralign);
+                dmem_next += alloc_size;
             }
 
             if (sh->sh_type != SHT_NOBITS)
