@@ -26,7 +26,7 @@ typedef struct SmList
 
 SmList* sm_head = NULL;
 
-static struct SancusModule* find_sm(sm_id id)
+static SmList* find_sm_list(sm_id id)
 {
     SmList* current = sm_head;
     while (current != NULL && current->sm.id != id)
@@ -34,11 +34,11 @@ static struct SancusModule* find_sm(sm_id id)
 
     if (current == NULL)
     {
-        printf("No SPM with ID 0x%x\n", id);
+        printf("No SM with ID 0x%x\n", id);
         return NULL;
     }
 
-    return &current->sm;
+    return current;
 }
 
 static void* get_sm_symbol(const char* sm_name, char* which)
@@ -275,7 +275,7 @@ void sm_call(void)
             break;
     }
 
-    struct SancusModule* sm = find_sm(id);
+    struct SancusModule* sm = sm_get_by_id(id);
     if (sm == NULL)
         return;
 
@@ -292,9 +292,12 @@ void sm_call(void)
 void sm_print_identity(void)
 {
     sm_id id = read_int();
-    struct SancusModule* sm = find_sm(id);
+    struct SancusModule* sm = sm_get_by_id(id);
     if (sm == NULL)
         return;
+
+    uart_write(sm->public_start,
+               (char*)sm->public_end - (char*)sm->public_start);
 
     printf("Identity of SPM %s:\n", sm->name);
     print_data(sm->public_start,
@@ -305,3 +308,14 @@ void sm_print_identity(void)
     print_data((char*)&sm->secret_end, 2);
 }
 
+struct SancusModule* sm_get_by_id(sm_id id)
+{
+    SmList* list = find_sm_list(id);
+    return list == NULL ? NULL : &list->sm;
+}
+
+ElfModule* sm_get_elf_by_id(sm_id id)
+{
+    SmList* list = find_sm_list(id);
+    return list == NULL ? NULL : list->em;
+}

@@ -421,24 +421,36 @@ static int should_add_symbol(SymtabEntry* sym)
 static int update_global_symtab(Elf32Header* eh, ElfModule* em,
                                 void** addresses)
 {
+    SectionHeader* const sh_begin = get_sh_begin(eh);
+    SectionHeader* const sh_end = get_sh_end(eh);
     SectionHeader* sh;
-    for (sh = get_sh_begin(eh); sh != get_sh_end(eh); sh++)
+    for (sh = sh_begin; sh != sh_end; sh++)
     {
-        if (sh->sh_type != SHT_SYMTAB)
-            continue;
-
-        SymtabEntry* sym_begin = (SymtabEntry*)((char*)eh + sh->sh_offset);
-        SymtabEntry* sym_end = sym_begin + sh->sh_size / sizeof(SymtabEntry);
-        SymtabEntry* sym;
-        for (sym = sym_begin; sym != sym_end; sym++)
+        void* section_address = addresses[sh - sh_begin];
+        if (section_address != NULL)
         {
-            if (should_add_symbol(sym))
+            // this section was loaded so add it to the symbol table
+            const char* name = get_section_name(eh, sh);
+            add_module_section(name, section_address, em);
+            printf("Added section %s: %p\n", name, section_address);
+        }
+
+        if (sh->sh_type == SHT_SYMTAB)
+        {
+            SymtabEntry* sym_begin = (SymtabEntry*)((char*)eh + sh->sh_offset);
+            SymtabEntry* sym_end =
+                sym_begin + sh->sh_size / sizeof(SymtabEntry);
+            SymtabEntry* sym;
+            for (sym = sym_begin; sym != sym_end; sym++)
             {
-                const char* name = get_symbol_name(eh, sh, sym);
-                void* value;
-                get_local_symbol_value(sym, addresses, &value);
-                add_global_symbol(name, value, em);
-                printf("Added global symbol %s: %p\n", name, value);
+                if (should_add_symbol(sym))
+                {
+                    const char* name = get_symbol_name(eh, sh, sym);
+                    void* value;
+                    get_local_symbol_value(sym, addresses, &value);
+                    add_global_symbol(name, value, em);
+                    printf("Added global symbol %s: %p\n", name, value);
+                }
             }
         }
     }

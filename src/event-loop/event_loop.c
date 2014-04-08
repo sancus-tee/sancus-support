@@ -19,7 +19,8 @@ typedef enum
     SmIdentity = 0x03,
     LoadData   = 0x04,
     Symtab     = 0x05,
-    PrintData  = 0x06,
+    SmSections = 0x06,
+    PrintData  = 0x07,
 } Command;
 
 static void load_data(void)
@@ -29,6 +30,17 @@ static void load_data(void)
     uart_read(address, size);
     printf("Loaded data at address %p:\n", address);
     print_data(address, size);
+}
+
+static void print_sm_sections()
+{
+    sm_id id = read_int();
+    ElfModule* module = sm_get_elf_by_id(id);
+
+    if (module == NULL)
+        printf("No module with ID 0x%x\n", id);
+    else
+        print_module_sections(module, uart_printf);
 }
 
 static void print_uart_data(void)
@@ -74,6 +86,10 @@ static void handle_command(void)
 
         case Symtab:
             print_global_symbols(uart_printf);
+            break;
+
+        case SmSections:
+            print_sm_sections();
             break;
 
         case PrintData:

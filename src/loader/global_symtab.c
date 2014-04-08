@@ -11,6 +11,7 @@ typedef struct
 {
     const char* name;
     void*       value;
+    int         is_section;
 } Symbol;
 
 #define SYM(name) {#name, name}
@@ -43,20 +44,27 @@ typedef struct SymbolList
 
 static SymbolList* dynamic_symbols_head = NULL;
 
+static int symbol_matches(const Symbol* sym, const char* name)
+{
+    return !sym->is_section && strcmp(sym->name, name) == 0;
+}
+
 void* get_global_symbol_value(const char* name)
 {
     unsigned i;
     for (i = 0; i < sizeof(symbols) / sizeof(Symbol); i++)
     {
-        if (strcmp(symbols[i].name, name) == 0)
-            return symbols[i].value;
+        const Symbol* sym = &symbols[i];
+        if (symbol_matches(sym, name))
+            return sym->value;
     }
 
     SymbolList* current = dynamic_symbols_head;
     while (current != NULL)
     {
-        if (strcmp(current->symbol.name, name) == 0)
-            return current->symbol.value;
+        const Symbol* sym = &current->symbol;
+        if (symbol_matches(sym, name))
+            return sym->value;
 
         current = current->next;
     }
@@ -64,7 +72,8 @@ void* get_global_symbol_value(const char* name)
     return NULL;
 }
 
-int add_global_symbol(const char* name, void* value, ElfModule* owner)
+static int add_symbol(const char* name, void* value, ElfModule* owner,
+                      int is_section)
 {
     SymbolList** current = &dynamic_symbols_head;
     while (*current != NULL)
@@ -78,9 +87,20 @@ int add_global_symbol(const char* name, void* value, ElfModule* owner)
     strcpy(tmp_name, name);
     (*current)->symbol.name = tmp_name;
     (*current)->symbol.value = value;
+    (*current)->symbol.is_section = is_section;
     (*current)->owner = owner;
     (*current)->next = NULL;
     return 1;
+}
+
+int add_global_symbol(const char* name, void* value, ElfModule* owner)
+{
+    return add_symbol(name, value, owner, /*is_section=*/0);
+}
+
+int add_module_section(const char* name, void* value, ElfModule* owner)
+{
+    return add_symbol(name, value, owner, /*is_section=*/1);
 }
 
 void remove_global_symbols(ElfModule* owner)
@@ -111,22 +131,57 @@ void remove_global_symbols(ElfModule* owner)
 
 static void print_symbol(const Symbol* sym, print_func pf)
 {
-    pf("%s = %p;\n", sym->name, sym->value);
+    if (sym->is_section)
+        pf("%s %p : {}\n", sym->name, sym->value);
+    else
+        pf("%s = %p;\n", sym->name, sym->value);
 }
 
-void print_global_symbols(print_func pf)
+static void print_symbols(print_func pf, int is_section, ElfModule* module)
 {
-    unsigned i;
-    for (i = 0; i < sizeof(symbols) / sizeof(Symbol); i++)
-        print_symbol(&symbols[i], pf);
+    if (is_section)
+        pf("SECTIONS\n{\n");
+
+    // global symbols don't belong to any module so don't print them if a module
+    // is given
+    if (module == NULL)
+    {
+        unsigned i;
+        for (i = 0; i < sizeof(symbols) / sizeof(Symbol); i++)
+        {
+            const Symbol* sym = &symbols[i];
+            if (sym->is_section == is_section)
+                print_symbol(sym, pf);
+        }
+    }
 
     SymbolList* current = dynamic_symbols_head;
     while (current != NULL)
     {
-        print_symbol(&current->symbol, pf);
+        // if no module is given, all symbols are printed; otherwise only the
+        // symbols belonging to the given module are printed
+        if (module == NULL || module == current->owner)
+        {
+            const Symbol* sym = &current->symbol;
+            if (sym->is_section == is_section)
+                print_symbol(sym, pf);
+        }
+
         current = current->next;
     }
+
+    if (is_section)
+        pf("}");
 
     pf("\n");
 }
 
+void print_global_symbols(print_func pf)
+{
+    print_symbols(pf, /*is_section=*/0, /*module=*/NULL);
+}
+
+void print_module_sections(ElfModule* module, print_func pf)
+{
+    print_symbols(pf, /*is_section=*/1, module);
+}
