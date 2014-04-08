@@ -269,13 +269,13 @@ static void** load_sections(Elf32Header* eh, ElfModule* em)
     return addresses;
 }
 
-static void* get_local_symbol_value(SymtabEntry* sym, void** addresses)
+static int get_local_symbol_value(SymtabEntry* sym, void** addresses,
+                                  void** dest)
 {
-    void* sym_addr;
     if (sym->st_shndx == SHN_UNDEF)
     {
         // global symbol
-        return NULL;
+        return 0;
     }
     else if (sym->st_shndx == SHN_ABS)
     {
@@ -283,16 +283,18 @@ static void* get_local_symbol_value(SymtabEntry* sym, void** addresses)
         if (sym->st_value > 0xffff)
         {
             puts("Absolute value too large");
-            return NULL;
+            return 0;
         }
 
-        sym_addr = (void*)(uint16_t)sym->st_value;
+        *dest = (void*)(uint16_t)sym->st_value;
+        return 1;
     }
     else if (sym->st_shndx < SHN_LORESERVE)
     {
         // local symbol
-        sym_addr = (char*)addresses[sym->st_shndx] + // section address
-                   sym->st_value; // symbol offset in section
+        *dest = (char*)addresses[sym->st_shndx] + // section address
+                sym->st_value; // symbol offset in section
+        return 1;
     }
     else
     {
@@ -303,10 +305,8 @@ static void* get_local_symbol_value(SymtabEntry* sym, void** addresses)
         else
             printf("%u\n", sym->st_shndx);
 
-        return NULL;
+        return 0;
     }
-
-    return sym_addr;
 }
 
 static int relocate_section(Elf32Header* eh, SectionHeader* rela_sh,
@@ -343,23 +343,25 @@ static int relocate_section(Elf32Header* eh, SectionHeader* rela_sh,
         void* rel_addr = base_addr + re->r_offset;
 
         // address to write (symbol value)
-        char* sym_base;
+        void* sym_base;
+        int ok;
         if (sym->st_shndx == SHN_UNDEF)
         {
             sym_base =
                 get_global_symbol_value(get_symbol_name(eh, symtab_sh, sym));
+            ok = sym_base != NULL;
         }
         else
-            sym_base = get_local_symbol_value(sym, addresses);
+            ok = get_local_symbol_value(sym, addresses, &sym_base);
 
-        if (sym_base == UNDEFINED_SYMBOL)
+        if (!ok)
         {
             printf("Undefined reference to symbol '%s'\n",
                    get_symbol_name(eh, symtab_sh, sym));
             return 0;
         }
 
-        void* sym_addr = sym_base + re->r_addend;
+        void* sym_addr = (char*)sym_base + re->r_addend;
 
         unsigned char rel_type = R_TYPE(re->r_info);
         if (rel_type == R_MSP430_16 || rel_type == R_MSP430_16_BYTE)
@@ -433,7 +435,8 @@ static int update_global_symtab(Elf32Header* eh, ElfModule* em,
             if (should_add_symbol(sym))
             {
                 const char* name = get_symbol_name(eh, sh, sym);
-                void* value = get_local_symbol_value(sym, addresses);
+                void* value;
+                get_local_symbol_value(sym, addresses, &value);
                 add_global_symbol(name, value, em);
                 printf("Added global symbol %s: %p\n", name, value);
             }

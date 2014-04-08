@@ -61,7 +61,7 @@ void* get_global_symbol_value(const char* name)
         current = current->next;
     }
 
-    return UNDEFINED_SYMBOL;
+    return NULL;
 }
 
 int add_global_symbol(const char* name, void* value, ElfModule* owner)

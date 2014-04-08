@@ -3,8 +3,6 @@
 
 #include "elf.h"
 
-#define UNDEFINED_SYMBOL (void*)0xffff
-
 typedef int (*print_func)(const char*, ...);
 
 void* get_global_symbol_value(const char* name);
