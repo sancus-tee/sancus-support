@@ -1,39 +1,13 @@
 #include "global_symtab.h"
+#include "private/symbol.h"
 
-#include "uart.h"
-
-#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <sancus/sm_support.h>
 
-typedef struct
-{
-    const char* name;
-    void*       value;
-    int         is_section;
-} Symbol;
-
-#define SYM(name) {#name, name}
-
-static const Symbol symbols[] =
-{
-    // libc
-    SYM(putchar),
-    SYM(puts),
-    SYM(printf),
-    SYM(strlen),
-    SYM(exit),
-
-    // SPM support
-    SYM(__unprotected_entry),
-    SYM(uart_read),
-    SYM(uart_read_byte),
-    SYM(uart_write),
-    SYM(uart_write_byte)
-};
-
-#undef SYM
+// these weak symbols will be replaced if the automatic symtab generation script
+// is used
+const Symbol __attribute__((weak)) static_symbols[] = {};
+const size_t __attribute__((weak)) num_static_symbols = 0;
 
 typedef struct SymbolList
 {
@@ -52,9 +26,9 @@ static int symbol_matches(const Symbol* sym, const char* name)
 void* get_global_symbol_value(const char* name)
 {
     unsigned i;
-    for (i = 0; i < sizeof(symbols) / sizeof(Symbol); i++)
+    for (i = 0; i < num_static_symbols; i++)
     {
-        const Symbol* sym = &symbols[i];
+        const Symbol* sym = &static_symbols[i];
         if (symbol_matches(sym, name))
             return sym->value;
     }
@@ -147,9 +121,9 @@ static void print_symbols(print_func pf, int is_section, ElfModule* module)
     if (module == NULL)
     {
         unsigned i;
-        for (i = 0; i < sizeof(symbols) / sizeof(Symbol); i++)
+        for (i = 0; i < num_static_symbols; i++)
         {
-            const Symbol* sym = &symbols[i];
+            const Symbol* sym = &static_symbols[i];
             if (sym->is_section == is_section)
                 print_symbol(sym, pf);
         }
