@@ -5,7 +5,6 @@ typedef struct
 {
     const char* name;
     void*       value;
-    int         is_section;
 } Symbol;
 
 #endif

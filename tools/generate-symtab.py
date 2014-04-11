@@ -56,7 +56,7 @@ def _emit_symbols(inputs, ignores=[]):
         if not name in ignores:
             type = symbol['st_info']['type']
             decl_lines.append('extern char {};'.format(name))
-            sym_lines.append('    {{"{0}", &{0}, 0}}'.format(name))
+            sym_lines.append('    {{"{0}", &{0}}}'.format(name))
             if args.verbose:
                 print('Added symbol', name)
 

@@ -12,6 +12,7 @@ const size_t __attribute__((weak)) num_static_symbols = 0;
 typedef struct SymbolList
 {
     Symbol             symbol;
+    int                is_section;
     ElfModule*         owner;
     struct SymbolList* next;
 } SymbolList;
@@ -20,7 +21,7 @@ static SymbolList* dynamic_symbols_head = NULL;
 
 static int symbol_matches(const Symbol* sym, const char* name)
 {
-    return !sym->is_section && strcmp(sym->name, name) == 0;
+    return strcmp(sym->name, name) == 0;
 }
 
 void* get_global_symbol_value(const char* name)
@@ -36,9 +37,12 @@ void* get_global_symbol_value(const char* name)
     SymbolList* current = dynamic_symbols_head;
     while (current != NULL)
     {
-        const Symbol* sym = &current->symbol;
-        if (symbol_matches(sym, name))
-            return sym->value;
+        if (!current->is_section)
+        {
+            const Symbol* sym = &current->symbol;
+            if (symbol_matches(sym, name))
+                return sym->value;
+        }
 
         current = current->next;
     }
@@ -61,7 +65,7 @@ static int add_symbol(const char* name, void* value, ElfModule* owner,
     strcpy(tmp_name, name);
     (*current)->symbol.name = tmp_name;
     (*current)->symbol.value = value;
-    (*current)->symbol.is_section = is_section;
+    (*current)->is_section = is_section;
     (*current)->owner = owner;
     (*current)->next = NULL;
     return 1;
@@ -103,9 +107,9 @@ void remove_global_symbols(ElfModule* owner)
     }
 }
 
-static void print_symbol(const Symbol* sym, print_func pf)
+static void print_symbol(const Symbol* sym, int is_section, print_func pf)
 {
-    if (sym->is_section)
+    if (is_section)
         pf("%s %p : {}\n", sym->name, sym->value);
     else
         pf("%s = %p;\n", sym->name, sym->value);
@@ -122,11 +126,7 @@ static void print_symbols(print_func pf, int is_section, ElfModule* module)
     {
         unsigned i;
         for (i = 0; i < num_static_symbols; i++)
-        {
-            const Symbol* sym = &static_symbols[i];
-            if (sym->is_section == is_section)
-                print_symbol(sym, pf);
-        }
+            print_symbol(&static_symbols[i], /*is_section=*/0, pf);
     }
 
     SymbolList* current = dynamic_symbols_head;
@@ -136,9 +136,8 @@ static void print_symbols(print_func pf, int is_section, ElfModule* module)
         // symbols belonging to the given module are printed
         if (module == NULL || module == current->owner)
         {
-            const Symbol* sym = &current->symbol;
-            if (sym->is_section == is_section)
-                print_symbol(sym, pf);
+            if (current->is_section == is_section)
+                print_symbol(&current->symbol, is_section, pf);
         }
 
         current = current->next;
