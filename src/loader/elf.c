@@ -488,11 +488,11 @@ ElfModule* elf_load(void* file)
     Elf32Header* eh = file;
 
     // start with some sanity checks
-    /*if (memcmp(eh->e_ident, magic, sizeof(magic)) != 0)*/
-    /*{*/
-        /*puts("Wrong magic");*/
-        /*return NULL;*/
-    /*}*/
+    if (memcmp(eh->e_ident, magic, sizeof(magic)) != 0)
+    {
+        puts("Wrong magic");
+        return NULL;
+    }
 
     // check if this is a relocatable file
     if (eh->e_type != 0x01)
