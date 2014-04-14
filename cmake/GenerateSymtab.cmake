@@ -1,25 +1,20 @@
 include(CMakeParseArguments)
 
-function(generate_symtab)
+function(generate_symtab output)
     if (NOT EXISTS ${SANCUS_SUPPORT_GENSYMTAB})
         message(FATAL_ERROR "Cannot find suitable symtab generator script")
     endif ()
 
-    cmake_parse_arguments(ARG "" "" "STD_LIBS" ${ARGN})
-    list(GET ARG_UNPARSED_ARGUMENTS 0 output)
-    list(GET ARG_UNPARSED_ARGUMENTS 1 input)
+    cmake_parse_arguments(ARG "" "" "INPUTS;STD_LIBS" ${ARGN})
 
-    # the list of input files is the given target library and all its
-    # dependencies
-    set(inputs $<TARGET_FILE:${input}>)
-    get_target_property(libs ${input} INTERFACE_LINK_LIBRARIES)
-
-    foreach (lib ${libs})
-        if (NOT TARGET ${lib})
-            message(FATAL_ERROR "Only targets are supported as libraries")
+    foreach (input ${ARG_INPUTS})
+        if (TARGET ${input})
+            set(inputs ${inputs} $<TARGET_FILE:${input}>)
+        elseif (EXISTS ${input})
+            set(inputs ${inputs} ${input})
+        else ()
+            message(FATAL_ERROR "Unable to find input ${input}")
         endif ()
-
-        set(inputs ${inputs} $<TARGET_FILE:${lib}>)
     endforeach ()
 
     set(options -o ${output} ${inputs})
@@ -30,5 +25,20 @@ function(generate_symtab)
 
     add_custom_command(OUTPUT  ${output}
                        COMMAND ${SANCUS_SUPPORT_GENSYMTAB} ${options}
-                       DEPENDS ${input} ${libs})
+                       DEPENDS ${ARG_OBJECTS} ${ARG_LIBS})
+endfunction()
+
+function(add_executable_with_symtab name)
+    cmake_parse_arguments(ARG "" "" "SOURCES;LIBS" ${ARGN})
+    set(sources ${ARG_SOURCES})
+    set(libs ${ARG_LIBS})
+    set(objects_lib ${name}_objects)
+    set(objects $<TARGET_OBJECTS:${objects_lib}>)
+    set(static_lib ${name}_static)
+
+    add_library(${objects_lib} OBJECT ${sources})
+    add_library(${static_lib} STATIC ${objects})
+    generate_symtab(symtab.c INPUTS ${static_lib} ${libs} STD_LIBS c)
+    add_executable(${name} symtab.c ${objects})
+    target_link_libraries(${name} ${libs})
 endfunction()

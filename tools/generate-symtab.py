@@ -36,15 +36,30 @@ def _should_add_symbol(symbol):
            sym_type in ('STT_OBJECT', 'STT_FUNC', 'STT_NOTYPE') and \
            sym_sec != 'SHN_UNDEF'
 
+
+def _generate_symbols_in_object(object):
+    with open(object, 'rb') as file:
+        for section in ELFFile(file).iter_sections():
+            if isinstance(section, SymbolTableSection):
+                for symbol in section.iter_symbols():
+                    if _should_add_symbol(symbol):
+                        yield symbol
+
+
+def _generate_symbols_in_lib(lib):
+    for object in _extract_ar(lib):
+        yield from _generate_symbols_in_object(object)
+
+
 def _generate_symbols(inputs):
     for input in inputs:
-        for object in _extract_ar(input):
-            with open(object, 'rb') as file:
-                for section in ELFFile(file).iter_sections():
-                    if isinstance(section, SymbolTableSection):
-                        for symbol in section.iter_symbols():
-                            if _should_add_symbol(symbol):
-                                yield symbol
+        _, ext = os.path.splitext(input)
+        if ext == '.o':
+            yield from _generate_symbols_in_object(input)
+        elif ext == '.a':
+            yield from _generate_symbols_in_lib(input)
+        else:
+            raise ValueError('Unknown input extension {}'.format(ext))
 
 
 def _emit_symbols(inputs, ignores=[]):
@@ -61,6 +76,7 @@ def _emit_symbols(inputs, ignores=[]):
                 print('Added symbol', name)
 
     return (decl_lines, sym_lines)
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-o', '--output',
