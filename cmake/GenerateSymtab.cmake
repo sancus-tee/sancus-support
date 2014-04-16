@@ -25,7 +25,7 @@ function(generate_symtab output)
 
     add_custom_command(OUTPUT  ${output}
                        COMMAND ${SANCUS_SUPPORT_GENSYMTAB} ${options}
-                       DEPENDS ${ARG_OBJECTS} ${ARG_LIBS})
+                       DEPENDS ${ARG_INPUTS})
 endfunction()
 
 function(add_executable_with_symtab name)
