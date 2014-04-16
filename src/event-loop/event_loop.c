@@ -105,21 +105,28 @@ static void dummy_idle_callback(int idle)
 {
 }
 
-void event_loop_start(idle_callback set_idle)
+static void dummy_tick_callback()
+{
+}
+
+void event_loop_start(idle_callback set_idle, tick_callback tick)
 {
     if (set_idle == NULL)
         set_idle = dummy_idle_callback;
+    if (tick == NULL)
+        tick = dummy_tick_callback;
 
     set_idle(1);
     puts("Event loop started");
 
     while (1)
     {
+        set_idle(0);
+
         if (uart_available())
-        {
-            set_idle(0);
             handle_command();
-            set_idle(1);
-        }
+
+        tick();
+        set_idle(1);
     }
 }
