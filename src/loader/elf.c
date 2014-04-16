@@ -374,9 +374,8 @@ static int relocate_section(Elf32Header* eh, SectionHeader* rela_sh,
         int ok;
         if (sym->st_shndx == SHN_UNDEF)
         {
-            sym_base =
-                get_global_symbol_value(get_symbol_name(eh, symtab_sh, sym));
-            ok = sym_base != NULL;
+            ok = get_global_symbol_value(get_symbol_name(eh, symtab_sh, sym),
+                                         &sym_base);
         }
         else
             ok = get_local_symbol_value(sym, addresses, &sym_base);

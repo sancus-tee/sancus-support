@@ -24,14 +24,17 @@ static int symbol_matches(const Symbol* sym, const char* name)
     return strcmp(sym->name, name) == 0;
 }
 
-void* get_global_symbol_value(const char* name)
+int get_global_symbol_value(const char* name, void** dest)
 {
     unsigned i;
     for (i = 0; i < num_static_symbols; i++)
     {
         const Symbol* sym = &static_symbols[i];
         if (symbol_matches(sym, name))
-            return sym->value;
+        {
+            *dest = sym->value;
+            return 1;
+        }
     }
 
     SymbolList* current = dynamic_symbols_head;
@@ -41,13 +44,16 @@ void* get_global_symbol_value(const char* name)
         {
             const Symbol* sym = &current->symbol;
             if (symbol_matches(sym, name))
-                return sym->value;
+            {
+                *dest = sym->value;
+                return 1;
+            }
         }
 
         current = current->next;
     }
 
-    return NULL;
+    return 0;
 }
 
 static int add_symbol(const char* name, void* value, ElfModule* owner,

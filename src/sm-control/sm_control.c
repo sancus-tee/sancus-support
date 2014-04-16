@@ -52,9 +52,10 @@ static void* get_sm_symbol(const char* sm_name, char* which)
     strcat(name, sm_name);
     strcat(name, "_");
     strcat(name, which);
-    void* sym = get_global_symbol_value(name);
+    void* sym;
+    int ok = get_global_symbol_value(name, &sym);
     free(name);
-    return sym;
+    return ok ? sym : NULL;
 }
 
 static void append_sm_list(SmList* sm)

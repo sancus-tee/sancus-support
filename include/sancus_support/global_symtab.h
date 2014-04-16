@@ -5,7 +5,7 @@
 
 typedef int (*print_func)(const char*, ...);
 
-void* get_global_symbol_value(const char* name);
+int get_global_symbol_value(const char* name, void** dest);
 int add_global_symbol(const char* name, void* value, ElfModule* owner);
 int add_module_section(const char* name, void* value, ElfModule* owner);
 void remove_global_symbols(ElfModule* owner);
