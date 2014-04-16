@@ -34,14 +34,20 @@ static void load_data(void)
 static void print_sm_ld_info()
 {
     sm_id id = read_int();
-    ElfModule* module = sm_get_elf_by_id(id);
 
-    if (module == NULL)
-        printf("No module with ID 0x%x\n", id);
+    if (id == 0)
+        print_global_symbols(uart_printf);
     else
     {
-        print_global_symbols(uart_printf);
-        print_module_sections(module, uart_printf);
+        ElfModule* module = sm_get_elf_by_id(id);
+
+        if (module == NULL)
+            printf("No module with ID 0x%x\n", id);
+        else
+        {
+            print_global_symbols(uart_printf);
+            print_module_sections(module, uart_printf);
+        }
     }
 }
 
