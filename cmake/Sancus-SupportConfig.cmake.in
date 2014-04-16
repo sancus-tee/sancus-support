@@ -1,7 +1,7 @@
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_LIST_DIR})
 
 include(FindPackageHandleStandardArgs)
-include(ExportTargets)
+include(${CMAKE_CURRENT_LIST_DIR}/ExportTargets.cmake)
 
 set(SANCUS_SUPPORT_INCLUDES "${CMAKE_CURRENT_LIST_DIR}/@REL_INCLUDES_DIR@")
 get_filename_component(SANCUS_SUPPORT_INCLUDES ${SANCUS_SUPPORT_INCLUDES} ABSOLUTE)
