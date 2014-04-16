@@ -22,6 +22,12 @@ def _find_std_lib(name):
     raise argparse.ArgumentTypeError('Unable to find library "{}"'.format(name))
 
 
+def _find_default_libs():
+    output =  subprocess.check_output(['sancus-ld', '--print-default-libs',
+                                       '--standalone'], universal_newlines=True)
+    return [f for f in output.split('\n') if os.path.isfile(f)]
+
+
 def _extract_ar(ar_file):
     tmp_dir = tempfile.mkdtemp()
     subprocess.check_call(['ar', 'x', ar_file], cwd=tmp_dir)
@@ -97,10 +103,10 @@ args = parser.parse_args()
 
 includes = ('sancus_support/private/symbol.h', 'errno.h', 'math.h', 'stdint.h',
             'stdio.h', 'stdlib.h', 'string.h', 'ctype.h', 'byteswap.h',
-            'setjmp.h')
+            'setjmp.h', 'sancus/sm_support.h')
 
 input_decls, input_syms = _emit_symbols(args.inputs, ignores=['putchar'])
-_, libs_syms = _emit_symbols(args.additional_libs,
+_, libs_syms = _emit_symbols(args.additional_libs + _find_default_libs(),
                              ignores=['ffs', 'rindex', 'index'])
 
 lines = []
