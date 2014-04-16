@@ -105,7 +105,8 @@ includes = ('sancus_support/private/symbol.h', 'errno.h', 'math.h', 'stdint.h',
             'stdio.h', 'stdlib.h', 'string.h', 'ctype.h', 'byteswap.h',
             'setjmp.h', 'sancus/sm_support.h')
 
-input_decls, input_syms = _emit_symbols(args.inputs, ignores=['putchar'])
+input_decls, input_syms = _emit_symbols(args.inputs,
+                                        ignores=['putchar', 'sancus_enable'])
 _, libs_syms = _emit_symbols(args.additional_libs + _find_default_libs(),
                              ignores=['ffs', 'rindex', 'index'])
 
