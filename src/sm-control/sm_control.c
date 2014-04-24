@@ -208,9 +208,11 @@ static void __attribute__((optimize("-O1"))) enter_sm(CallInfo* ci)
         "mov  r1, &__unprotected_sp\n\t"
         "mov  %5, r6\n\t"
         "mov  #1f, r7\n\t"
+        "dint\n\t"
         "br   %6\n\t"
         "1:\n\t"
         "mov  &__unprotected_sp, r1\n\t"
+        "eint\n\t"
         :
         : "r"(args_left), "m"(ci->arg1), "m"(ci->arg2), "m"(ci->arg3),
           "m"(ci->arg4), "m"(ci->index), "m"(ci->entry)
