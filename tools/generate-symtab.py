@@ -76,7 +76,11 @@ def _emit_symbols(inputs, ignores=[]):
         name = symbol.name.decode('ascii')
         if not name in ignores:
             type = symbol['st_info']['type']
-            decl_lines.append('extern char {};'.format(name))
+            if name == 'putchar':
+                decl = 'extern int putchar(int c);'
+            else:
+                decl = 'extern char {};'.format(name)
+            decl_lines.append(decl)
             sym_lines.append('    {{"{0}", &{0}}}'.format(name))
             if args.verbose:
                 print('Added symbol', name)
@@ -106,7 +110,7 @@ includes = ('sancus_support/private/symbol.h', 'errno.h', 'math.h', 'stdint.h',
             'setjmp.h', 'sancus/sm_support.h')
 
 input_decls, input_syms = _emit_symbols(args.inputs,
-                                        ignores=['putchar', 'sancus_enable'])
+                                        ignores=['sancus_enable'])
 _, libs_syms = _emit_symbols(args.additional_libs + _find_default_libs(),
                              ignores=['ffs', 'rindex', 'index'])
 
