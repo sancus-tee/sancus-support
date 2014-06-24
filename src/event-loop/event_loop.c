@@ -126,7 +126,7 @@ static void print_uart_data(ParseState* state)
 
 static void handle_command(void)
 {
-    Packet* packet = link_get_next_packet();
+    Frame* packet = link_get_next_frame();
     ParseState* state = create_parse_state(packet->data, packet->len);
     uint8_t command;
 
@@ -169,7 +169,7 @@ static void handle_command(void)
             printf("Unknown command %02x\n", command);
     }
 
-    link_free_packet(packet);
+    link_free_frame(packet);
     free_parse_state(state);
 
     printf("Finished command %02x\n", command);
@@ -197,7 +197,7 @@ void event_loop_start(idle_callback set_idle, tick_callback tick)
     {
         set_idle(0);
 
-        if (link_packets_available())
+        if (link_frames_available())
             handle_command();
 
         tick();

@@ -6,16 +6,16 @@
 #include <string.h>
 #include <stdio.h>
 
-#define INIT_PACKET_LEN 16
+#define INIT_FRAME_LEN 16
 
-typedef struct PacketList
+typedef struct FrameList
 {
-    Packet*            packet;
-    struct PacketList* next;
-} PacketList;
+    Frame*            frame;
+    struct FrameList* next;
+} FrameList;
 
 static PhyApi phy = {NULL, NULL, NULL};
-static PacketList* packets_head = NULL;
+static FrameList* frames_head = NULL;
 static uint8_t* buffer = NULL;
 static size_t buffer_len = 0;
 static size_t buffer_pos = 0;
@@ -44,16 +44,16 @@ static int flush_until_null_byte(void)
     return 0;
 }
 
-// returns 1 if the start of a new packet has been found (that is, the next byte
-// from PHY is the first byte in the packet) and 0 otherwise (no more bytes
-// available from PHY before the start of a packet was found or some error)
-static int start_new_packet(void)
+// returns 1 if the start of a new frame has been found (that is, the next byte
+// from PHY is the first byte in the frame) and 0 otherwise (no more bytes
+// available from PHY before the start of a frame was found or some error)
+static int start_new_frame(void)
 {
     if (!flush_until_null_byte())
         return 0;
 
-    buffer = malloc(INIT_PACKET_LEN);
-    buffer_len = INIT_PACKET_LEN;
+    buffer = malloc(INIT_FRAME_LEN);
+    buffer_len = INIT_FRAME_LEN;
     buffer_pos = 0;
 
     if (buffer == NULL)
@@ -88,8 +88,8 @@ static void free_buffer(void)
     buffer_pos = 0;
 }
 
-// return 1 iff the end of the current packet has been found
-static int continue_packet(void)
+// return 1 iff the end of the current frame has been found
+static int continue_frame(void)
 {
     while (phy.available() > 0)
     {
@@ -110,82 +110,82 @@ static int continue_packet(void)
     return 0;
 }
 
-static int has_partial_packet(void)
+static int has_partial_frame(void)
 {
     return buffer != NULL;
 }
 
-static Packet* new_packet(size_t len)
+static Frame* new_frame(size_t len)
 {
-    Packet* packet = malloc(sizeof(Packet));
+    Frame* frame = malloc(sizeof(Frame));
 
-    if (packet == NULL)
+    if (frame == NULL)
         return NULL;
 
-    packet->len = len;
-    packet->data = malloc(len);
+    frame->len = len;
+    frame->data = malloc(len);
 
-    if (packet->data == NULL)
+    if (frame->data == NULL)
     {
-        free(packet);
+        free(frame);
         return NULL;
     }
 
-    return packet;
+    return frame;
 }
 
-static int enqueue_packet(Packet* packet)
+static int enqueue_frame(Frame* frame)
 {
-    PacketList** current = &packets_head;
+    FrameList** current = &frames_head;
 
     while (*current != NULL)
         current = &(*current)->next;
 
-    PacketList* new_element = malloc(sizeof(PacketList));
+    FrameList* new_element = malloc(sizeof(FrameList));
 
     if (new_element == NULL)
         return 0;
 
-    new_element->packet = packet;
+    new_element->frame = frame;
     new_element->next = NULL;
     *current = new_element;
     return 1;
 }
 
-static Packet* dequeue_packet(void)
+static Frame* dequeue_frame(void)
 {
-    if (packets_head == NULL)
+    if (frames_head == NULL)
         return NULL;
 
-    PacketList* head = packets_head;
-    Packet* packet = head->packet;
-    packets_head = head->next;
+    FrameList* head = frames_head;
+    Frame* frame = head->frame;
+    frames_head = head->next;
     free(head);
-    return packet;
+    return frame;
 }
 
-static int finish_packet(void)
+static int finish_frame(void)
 {
-    Packet* packet = new_packet(buffer_pos);
+    Frame* frame = new_frame(buffer_pos);
 
-    if (packet == NULL)
+    if (frame == NULL)
         return 0;
 
-    if (!cobs_decode(buffer, buffer_pos, packet->data, &packet->len))
+    if (!cobs_decode(buffer, buffer_pos, frame->data, &frame->len))
     {
-        puts("Dropping malformed packet");
+        puts("Dropping malformed frame");
         goto error;
     }
 
-    if (packet->len == 0)
+    if (frame->len == 0)
     {
-        puts("Dropping zero-length packet");
+        puts("Dropping zero-length frame");
         goto error;
     }
 
-    if (!enqueue_packet(packet))
+    if (!enqueue_frame(frame))
     {
-        puts("Dropping packet due to memory pressure");
+        puts("Dropping frame due to memory pressure");
         goto error;
     }
 
@@ -194,7 +194,7 @@ static int finish_packet(void)
 
 error:
     free_buffer();
-    link_free_packet(packet);
+    link_free_frame(frame);
     return 0;
 }
 
@@ -203,20 +203,20 @@ static void read_phy(void)
     if (!phy.available())
         return;
 
-    if (!has_partial_packet())
+    if (!has_partial_frame())
     {
-        if (!start_new_packet())
+        if (!start_new_frame())
             return;
     }
 
-    if (continue_packet())
-        finish_packet();
+    if (continue_frame())
+        finish_frame();
 }
 
-static size_t packet_count(void)
+static size_t frame_count(void)
 {
     size_t count = 0;
-    PacketList** current = &packets_head;
+    FrameList** current = &frames_head;
 
     while (*current != NULL)
     {
@@ -227,37 +227,37 @@ static size_t packet_count(void)
     return count;
 }
 
-size_t link_packets_available(void)
+size_t link_frames_available(void)
 {
     read_phy();
-    return packet_count();
+    return frame_count();
 }
 
-Packet* link_get_next_packet(void)
+Frame* link_get_next_frame(void)
 {
     read_phy();
-    return dequeue_packet();
+    return dequeue_frame();
 }
 
-int link_send_packet(Packet* packet)
+int link_send_frame(Frame* frame)
 {
-    printf("Sending %u byte packet\n", packet->len);
-    uint8_t* buf = malloc(cobs_max_encoded_len(packet->len));
+    printf("Sending %u byte frame\n", frame->len);
+    uint8_t* buf = malloc(cobs_max_encoded_len(frame->len));
 
     if (buf == NULL)
     {
-        puts("Out of memory, dropping outgoing packet");
+        puts("Out of memory, dropping outgoing frame");
         return 0;
     }
 
     size_t len;
-    if (!cobs_encode(packet->data, packet->len, buf, &len))
+    if (!cobs_encode(frame->data, frame->len, buf, &len))
     {
         free(buf);
         return 0;
     }
 
-    printf("Packet encoded in %u + 2 bytes\n", len);
+    printf("Frame encoded in %u + 2 bytes\n", len);
 
     phy.write(0x00);
 
@@ -273,18 +273,18 @@ int link_send_packet(Packet* packet)
 
 int link_send_data(uint8_t* data, size_t len)
 {
-    Packet packet = {data, len};
-    return link_send_packet(&packet);
+    Frame frame = {data, len};
+    return link_send_frame(&frame);
 }
 
 int link_send_byte(uint8_t byte)
 {
-    Packet packet = {&byte, 1};
-    return link_send_packet(&packet);
+    Frame frame = {&byte, 1};
+    return link_send_frame(&frame);
 }
 
-void link_free_packet(Packet* packet)
+void link_free_frame(Frame* frame)
 {
-    free(packet->data);
-    free(packet);
+    free(frame->data);
+    free(frame );
 }

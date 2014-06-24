@@ -15,14 +15,14 @@ typedef struct
 {
     uint8_t* data;
     size_t   len;
-} Packet;
+} Frame;
 
 int link_init(PhyApi* phy_api);
-size_t link_packets_available(void);
-Packet* link_get_next_packet(void);
-int link_send_packet(Packet* packet);
+size_t link_frames_available(void);
+Frame* link_get_next_frame(void);
+int link_send_frame(Frame* frame);
 int link_send_data(uint8_t* data, size_t len);
 int link_send_byte(uint8_t byte);
-void link_free_packet(Packet* packet);
+void link_free_frame(Frame* frame);
 
 #endif
