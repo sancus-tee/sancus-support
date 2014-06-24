@@ -63,7 +63,8 @@ int cobs_decode(const uint8_t* src, size_t len,
             *dst++ = *src++;
         }
 
-        *dst++ = 0;
+        if (code != 0xff)
+            *dst++ = 0;
     }
 
     uint8_t* dst_end;

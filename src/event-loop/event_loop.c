@@ -1,11 +1,12 @@
 #include "event_loop.h"
 
 #include <stdio.h>
+#include <string.h>
 #include <msp430.h>
-
 
 #include "sm_control.h"
 #include "uart.h"
+#include "link.h"
 #include "global_symtab.h"
 #include "tools.h"
 
@@ -22,87 +23,154 @@ typedef enum
     PrintData  = 0x06,
 } Command;
 
-static void load_data(void)
+static void echo(ParseState* state)
 {
-    void* address = (void*)read_int();
-    size_t size = read_int();
-    uart_read(address, size);
+    uint8_t* buf;
+    size_t len;
+
+    if (parse_all_raw_data(state, &buf, &len))
+        link_send_data(buf, len);
+    else
+        puts("Error reading Echo packet");
+}
+
+static void load_data(ParseState* state)
+{
+    static const char* error_prefix = "Error reading LoadData packet";
+
+    void* address;
+    size_t size;
+
+    if (!parse_int(state, (uint16_t*)&address) || !parse_int(state, &size))
+    {
+        printf("%s: Wrong header\n", error_prefix);
+        return;
+    }
+
+    uint8_t* buf;
+
+    if (!parse_raw_data(state, size, &buf))
+    {
+        printf("%s: Not enough data\n", error_prefix);
+        return;
+    }
+
+    memcpy(address, buf, size);
+
     printf("Loaded data at address %p:\n", address);
     print_data(address, size);
 }
 
-static void print_sm_ld_info()
+static void print_sm_ld_info(ParseState* state)
 {
-    sm_id id = read_int();
+    static const char* error_prefix = "Error handling SmLdInfo packet";
+
+    sm_id id;
+
+    if (!parse_int(state, &id))
+    {
+        printf("%s: Failed to read ID\n", error_prefix);
+        return;
+    }
+
+    if (!link_printf_init())
+    {
+        printf("%s: Out of memory 1\n", error_prefix);
+        return;
+    }
 
     if (id == 0)
-        print_global_symbols(uart_printf);
+        print_global_symbols(link_printf);
     else
     {
         ElfModule* module = sm_get_elf_by_id(id);
 
         if (module == NULL)
-            printf("No module with ID 0x%x\n", id);
+            printf("%s: No module with ID 0x%x\n", error_prefix, id);
         else
         {
-            print_global_symbols(uart_printf);
-            print_module_sections(module, uart_printf);
+            print_global_symbols(link_printf);
+            print_module_sections(module, link_printf);
         }
     }
+
+    link_printf_finish();
+    return;
 }
 
-static void print_uart_data(void)
+static void print_uart_data(ParseState* state)
 {
-    unsigned n = read_int();
-    unsigned char* buf = malloc(n);
+    static const char* error_prefix = "Error handling PrintData packet";
 
-    unsigned i;
-    for (i = 0; i < n; i++)
-        buf[i] = uart_read_byte();
+    size_t len;
 
-    for (i = 0; i < n; i++)
+    if (!parse_int(state, &len))
+    {
+        printf("%s: Failed to read data length\n", error_prefix);
+        return;
+    }
+
+    uint8_t* buf;
+
+    if (!parse_raw_data(state, len, &buf))
+    {
+        printf("%s: Failed to read %u bytes of data\n", error_prefix, len);
+        return;
+    }
+
+    for (size_t i = 0; i < len; i++)
         printf("%02x ", buf[i]);
-    printf("\n");
 
-    free(buf);
+    printf("\n");
 }
 
 static void handle_command(void)
 {
-    Command command = uart_read_byte();
+    Packet* packet = link_get_next_packet();
+    ParseState* state = create_parse_state(packet->data, packet->len);
+    uint8_t command;
+
+    if (!parse_byte(state, &command))
+        return;
+
+    printf("handle_command %02x\n", command);
+
     switch (command)
     {
         case Echo:
-            uart_write_byte(uart_read_byte());
+            echo(state);
             break;
 
         case SmLoad:
-            sm_load();
+            sm_load(state);
             break;
 
         case SmCall:
-            sm_call();
+            sm_call(state);
             break;
 
         case SmIdentity:
-            sm_print_identity();
+            sm_print_identity(state);
             break;
 
         case LoadData:
-            load_data();
+            load_data(state);
             break;
 
         case SmLdInfo:
-            print_sm_ld_info();
+            print_sm_ld_info(state);
             break;
 
         case PrintData:
-            print_uart_data();
+            print_uart_data(state);
             break;
 
         default:
             printf("Unknown command %02x\n", command);
     }
+
+    link_free_packet(packet);
+    free_parse_state(state);
 
     printf("Finished command %02x\n", command);
 }
@@ -129,7 +197,7 @@ void event_loop_start(idle_callback set_idle, tick_callback tick)
     {
         set_idle(0);
 
-        if (uart_available())
+        if (link_packets_available())
             handle_command();
 
         tick();

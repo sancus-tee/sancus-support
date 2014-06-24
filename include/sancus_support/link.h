@@ -22,6 +22,7 @@ size_t link_packets_available(void);
 Packet* link_get_next_packet(void);
 int link_send_packet(Packet* packet);
 int link_send_data(uint8_t* data, size_t len);
+int link_send_byte(uint8_t byte);
 void link_free_packet(Packet* packet);
 
 #endif

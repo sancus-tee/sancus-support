@@ -1,6 +1,7 @@
 #include "sm_control.h"
 
 #include "uart.h"
+#include "link.h"
 #include "elf.h"
 #include "tools.h"
 #include "global_symtab.h"
@@ -78,7 +79,7 @@ static struct SancusModule* register_sm(char* name, uint16_t vendor_id,
     struct SancusModule* sm = &sm_list->sm;
     sm->id = 0;
     sm->vendor_id = vendor_id;
-    sm->name = name;
+    sm->name = strdup(name);
     sm->public_start = get_sm_symbol(name, "public_start");
     sm->public_end = get_sm_symbol(name, "public_end");
     sm->secret_start = get_sm_symbol(name, "secret_start");
@@ -121,35 +122,50 @@ int sm_register_existing(struct SancusModule* sm)
     return 1;
 }
 
-void sm_load(void)
+void sm_load(ParseState* state)
 {
+    static const char* error_prefix = "Error reading SmLoad packet";
+
     sm_id ret_id = 0;
-    int error = 0;
-    char* name = read_string();
-    if (name == NULL)
-        error = 1;
+    uint8_t buf[2];
+    char* name = NULL;
 
-    uint16_t vendor_id = read_int();
-    uint16_t size = read_int();
-    unsigned char* file = malloc(size);
-    if (file == NULL || error)
+    if (!parse_string(state, &name))
     {
-        while (size--)
-            uart_read_byte();
-
-        printf("Not enough memory for a %uB module\n", size);
-        free(name);
+        printf("%s: Expected SM name\n", error_prefix);
         goto out;
     }
 
-    uart_read(file, size);
+    uint16_t vendor_id;
+
+    if (!parse_int(state, &vendor_id))
+    {
+        printf("%s: Expected vendor ID\n", error_prefix);
+        goto out;
+    }
+
+    uint16_t size;
+
+    if (!parse_int(state, &size))
+    {
+        printf("%s: Expected SM size\n", error_prefix);
+        goto out;
+    }
+
+    uint8_t* file;
+
+    if (!parse_raw_data(state, size, &file))
+    {
+        printf("%s: Expected %u bytes of data\n", error_prefix, size);
+        goto out;
+    }
+
     printf("Accepted SPM %s for vendor %u\n", name, vendor_id);
     printf("Read %u bytes:\n", size);
     print_data(file, size);
     printf("Loading...\n");
 
     ElfModule* em = elf_load(file);
-    free(file);
 
     if (em == NULL)
     {
@@ -170,7 +186,9 @@ void sm_load(void)
     ret_id = sm->id;
 
 out:
-    write_int(ret_id);
+    buf[0] = ret_id >> 8;
+    buf[1] = ret_id & 0xff;
+    link_send_data(buf, sizeof(buf));
 }
 
 typedef struct
@@ -219,58 +237,50 @@ static void __attribute__((optimize("-O1"))) enter_sm(CallInfo* ci)
         : "r6", "r7", "r12", "r13", "r14", "r15");
 }
 
-void sm_call(void)
+void sm_call(ParseState* state)
 {
-    uint16_t id = read_int();
-    uint16_t index = read_int();
-    uint16_t nargs = read_int();
+    static const char* error_prefix = "Error reading SmCall packet";
+
+    uint16_t id, index, nargs;
+
+    if (!parse_int(state, &id)    ||
+        !parse_int(state, &index) ||
+        !parse_int(state, &nargs))
+    {
+        printf("%s: Incorrect header\n", error_prefix);
+        return;
+    }
 
     CallInfo ci;
-    void* arg_buf = NULL;
+    uint16_t* args[] = {&ci.arg1, &ci.arg2, &ci.arg3, &ci.arg4};
+    uint8_t* arg_buf = NULL;
 
     switch (nargs)
     {
         case 0:
-            ci.nargs = 0;
-            break;
-
         case 1:
-            ci.nargs = 1;
-            ci.arg1 = read_int();
-            break;
-
         case 2:
-            ci.nargs = 2;
-            ci.arg1 = read_int();
-            ci.arg2 = read_int();
-            break;
-
         case 3:
-            ci.nargs = 3;
-            ci.arg1 = read_int();
-            ci.arg2 = read_int();
-            ci.arg3 = read_int();
-            break;
-
         case 4:
-            ci.nargs = 4;
-            ci.arg1 = read_int();
-            ci.arg2 = read_int();
-            ci.arg3 = read_int();
-            ci.arg4 = read_int();
+            ci.nargs = nargs;
+
+            for (uint16_t i = 0; i < nargs; i++)
+            {
+                if (!parse_int(state, args[i]))
+                {
+                    printf("%s: Failed to read argument %u\n", error_prefix, i);
+                    return;
+                }
+            }
+
             break;
 
         default:
-            arg_buf = malloc(nargs);
-            if (arg_buf == NULL)
+            if (!parse_raw_data(state, nargs, &arg_buf))
             {
-                puts("Out of memory");
-                while (nargs--)
-                    uart_read_byte();
+                printf("%s: Failed to read raw arguments\n");
                 return;
             }
-
-            uart_read(arg_buf, nargs);
 
             ci.nargs = 2;
             ci.arg1 = (uint16_t)arg_buf;
@@ -279,30 +289,43 @@ void sm_call(void)
     }
 
     struct SancusModule* sm = sm_get_by_id(id);
+
     if (sm == NULL)
+    {
+        printf("%s: No SM with ID %u\n", id);
         return;
+    }
 
     ci.entry = sm->public_start;
     ci.index = index;
 
-    printf("Accepted call to SPM %s, index %u, args %u\n",
+    printf("Accepted call to SM %s, index %u, args %u\n",
            sm->name, index, nargs);
 
     enter_sm(&ci);
-    free(arg_buf);
 }
 
-void sm_print_identity(void)
+void sm_print_identity(ParseState* state)
 {
-    sm_id id = read_int();
+    static const char* error_prefix = "Error reading SmIdentity packet";
+
+    sm_id id;
+
+    if (!parse_int(state, &id))
+    {
+        printf("%s: Failed to read ID\n");
+        return;
+    }
+
     struct SancusModule* sm = sm_get_by_id(id);
+
     if (sm == NULL)
         return;
 
-    uart_write(sm->public_start,
-               (char*)sm->public_end - (char*)sm->public_start);
+    link_send_data(sm->public_start,
+                   (char*)sm->public_end - (char*)sm->public_start);
 
-    printf("Identity of SPM %s:\n", sm->name);
+    printf("Identity of SM %s:\n", sm->name);
     print_data(sm->public_start,
                (char*)sm->public_end - (char*)sm->public_start);
     print_data((char*)&sm->public_start, 2);

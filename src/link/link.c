@@ -241,10 +241,14 @@ Packet* link_get_next_packet(void)
 
 int link_send_packet(Packet* packet)
 {
+    printf("Sending %u byte packet\n", packet->len);
     uint8_t* buf = malloc(cobs_max_encoded_len(packet->len));
 
     if (buf == NULL)
+    {
+        puts("Out of memory, dropping outgoing packet");
         return 0;
+    }
 
     size_t len;
     if (!cobs_encode(packet->data, packet->len, buf, &len))
@@ -252,6 +256,8 @@ int link_send_packet(Packet* packet)
         free(buf);
         return 0;
     }
+
+    printf("Packet encoded in %u + 2 bytes\n", len);
 
     phy.write(0x00);
 
@@ -268,6 +274,12 @@ int link_send_packet(Packet* packet)
 int link_send_data(uint8_t* data, size_t len)
 {
     Packet packet = {data, len};
+    return link_send_packet(&packet);
+}
+
+int link_send_byte(uint8_t byte)
+{
+    Packet packet = {&byte, 1};
     return link_send_packet(&packet);
 }
 
