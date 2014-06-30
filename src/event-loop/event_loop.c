@@ -5,8 +5,7 @@
 #include <msp430.h>
 
 #include "sm_control.h"
-#include "uart.h"
-#include "link.h"
+#include "packet.h"
 #include "global_symtab.h"
 #include "tools.h"
 
@@ -29,7 +28,7 @@ static void echo(ParseState* state)
     size_t len;
 
     if (parse_all_raw_data(state, &buf, &len))
-        link_send_data(buf, len);
+        packet_write(buf, len);
     else
         puts("Error reading Echo packet");
 }
@@ -73,14 +72,14 @@ static void print_sm_ld_info(ParseState* state)
         return;
     }
 
-    if (!link_printf_init())
+    if (!cb_printf_init(packet_write))
     {
         printf("%s: Out of memory 1\n", error_prefix);
         return;
     }
 
     if (id == 0)
-        print_global_symbols(link_printf);
+        print_global_symbols(cb_printf);
     else
     {
         ElfModule* module = sm_get_elf_by_id(id);
@@ -89,12 +88,12 @@ static void print_sm_ld_info(ParseState* state)
             printf("%s: No module with ID 0x%x\n", error_prefix, id);
         else
         {
-            print_global_symbols(link_printf);
-            print_module_sections(module, link_printf);
+            print_global_symbols(cb_printf);
+            print_module_sections(module, cb_printf);
         }
     }
 
-    link_printf_finish();
+    cb_printf_finish();
     return;
 }
 
@@ -126,12 +125,15 @@ static void print_uart_data(ParseState* state)
 
 static void handle_command(void)
 {
-    Frame* packet = link_get_next_frame();
+    Packet* packet = packet_get_next();
     ParseState* state = create_parse_state(packet->data, packet->len);
     uint8_t command;
 
     if (!parse_byte(state, &command))
-        return;
+        goto free_mem;
+
+    if (!packet_start())
+        goto free_mem;
 
     printf("handle_command %02x\n", command);
 
@@ -169,10 +171,14 @@ static void handle_command(void)
             printf("Unknown command %02x\n", command);
     }
 
-    link_free_frame(packet);
-    free_parse_state(state);
+    if (!packet_finish())
+        goto free_mem;
 
     printf("Finished command %02x\n", command);
+
+free_mem:
+    packet_free(packet);
+    free_parse_state(state);
 }
 
 static void dummy_idle_callback(int idle)
@@ -197,7 +203,7 @@ void event_loop_start(idle_callback set_idle, tick_callback tick)
     {
         set_idle(0);
 
-        if (link_frames_available())
+        if (packet_available())
             handle_command();
 
         tick();

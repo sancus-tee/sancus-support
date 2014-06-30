@@ -7,6 +7,7 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
 
 add_subdirectory(dev)
 add_subdirectory(link)
+add_subdirectory(packet)
 add_subdirectory(loader)
 add_subdirectory(event-loop)
 add_subdirectory(sm-control)

@@ -20,9 +20,10 @@ int parse_string(ParseState* state, char** str);
 int parse_raw_data(ParseState* state, size_t len, uint8_t** buf);
 int parse_all_raw_data(ParseState* state, uint8_t** buf, size_t* len);
 
-int link_printf_init(void);
-void link_printf_finish(void);
-int __attribute__((format(printf, 1, 2))) link_printf(const char* str, ...);
+typedef void (*printf_cb)(uint8_t*, size_t);
+
+int cb_printf_init(printf_cb cb);
+void cb_printf_finish(void);
+int __attribute__((format(printf, 1, 2))) cb_printf(const char* str, ...);
 
 #endif
-

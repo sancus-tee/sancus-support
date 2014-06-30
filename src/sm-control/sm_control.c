@@ -1,10 +1,10 @@
 #include "sm_control.h"
 
 #include "uart.h"
-#include "link.h"
 #include "elf.h"
 #include "tools.h"
 #include "global_symtab.h"
+#include "packet.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -188,7 +188,7 @@ void sm_load(ParseState* state)
 out:
     buf[0] = ret_id >> 8;
     buf[1] = ret_id & 0xff;
-    link_send_data(buf, sizeof(buf));
+    packet_write(buf, sizeof(buf));
 }
 
 typedef struct
@@ -322,8 +322,8 @@ void sm_print_identity(ParseState* state)
     if (sm == NULL)
         return;
 
-    link_send_data(sm->public_start,
-                   (char*)sm->public_end - (char*)sm->public_start);
+    packet_write(sm->public_start,
+                 (char*)sm->public_end - (char*)sm->public_start);
 
     printf("Identity of SM %s:\n", sm->name);
     print_data(sm->public_start,

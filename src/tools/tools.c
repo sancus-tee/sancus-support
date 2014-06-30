@@ -1,7 +1,6 @@
 #include "tools.h"
 
 #include "uart.h"
-#include "link.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -168,33 +167,30 @@ int parse_all_raw_data(ParseState* state, uint8_t** buf, size_t* len)
     return 1;
 }
 
-#define INIT_PRINTF_BUF_LEN 32
+#define PRINTF_BUF_LEN 64
 
-static uint8_t* printf_buf = NULL;
-static size_t printf_buf_len = 0;
+static printf_cb callback = NULL;
+static uint8_t printf_buf[PRINTF_BUF_LEN] = {};
 static size_t printf_buf_idx = 0;
 
-int link_printf_init(void)
+int cb_printf_init(printf_cb cb)
 {
-    link_printf_finish();
-    printf_buf = malloc(INIT_PRINTF_BUF_LEN);
+    cb_printf_finish();
+    callback = cb;
 
     if (printf_buf == NULL)
         return 0;
 
-    printf_buf_len = INIT_PRINTF_BUF_LEN;
     printf_buf_idx = 0;
     return 1;
 }
 
-void link_printf_finish(void)
+void cb_printf_finish(void)
 {
     if (printf_buf_idx > 0)
-        link_send_data(printf_buf, printf_buf_idx);
+        callback(printf_buf, printf_buf_idx);
 
-    free(printf_buf);
-    printf_buf = NULL;
-    printf_buf_len = 0;
+    callback = NULL;
     printf_buf_idx = 0;
 }
 
@@ -205,30 +201,16 @@ static int buf_putchar(int c)
 
     printf_buf[printf_buf_idx++] = c;
 
-    if (printf_buf_idx >= printf_buf_len)
+    if (printf_buf_idx == PRINTF_BUF_LEN)
     {
-        size_t new_len = printf_buf_len * 2;
-
-        // there is no realloc so we implement it ourself
-        uint8_t* new_buf = malloc(new_len);
-
-        if (new_buf == NULL)
-        {
-            link_send_data(printf_buf, printf_buf_len);
-            printf_buf_idx = 0;
-        }
-        else
-        {
-            memcpy(new_buf, printf_buf, printf_buf_idx);
-            printf_buf = new_buf;
-            printf_buf_len = new_len;
-        }
+        callback(printf_buf, PRINTF_BUF_LEN);
+        printf_buf_idx = 0;
     }
 
     return c;
 }
 
-int link_printf(const char* str, ...)
+int cb_printf(const char* str, ...)
 {
     va_list ap;
     va_start(ap, str);
