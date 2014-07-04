@@ -102,7 +102,13 @@ static int continue_frame(void)
         uint8_t byte = phy.read();
 
         if (byte == 0)
-            return 1;
+        {
+            // ignore null bytes at the beginning of a frame
+            if (buffer_pos == 0)
+                continue;
+            else
+                return 1;
+        }
 
         buffer[buffer_pos++] = byte;
     }
