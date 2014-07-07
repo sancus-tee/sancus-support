@@ -58,6 +58,7 @@ static int start_new_frame(void)
 
     if (buffer == NULL)
     {
+        puts("link OOM: start_new_frame");
         buffer_len = 0;
         return 0;
     }
@@ -67,11 +68,20 @@ static int start_new_frame(void)
 
 static int realloc_buffer(void)
 {
-    size_t new_len = buffer_len * 2;
+    // buffer size is increased exponentially until 4096B after which it is
+    // increased linearly. this is because allocations of 4K generally succeed
+    // while those of 8K don't.
+    size_t new_len = buffer_len < 4096 ? buffer_len * 2 : buffer_len + 512;
     u_int8_t* new_buf = malloc(new_len);
 
     if (new_buf == NULL)
+    {
+        printf("link OOM: realloc_buffer(%u); discarding frame\n", new_len);
+        free(buffer);
+        buffer_len = 0;
+        buffer_pos = 0;
         return 0;
+    }
 
     memcpy(new_buf, buffer, buffer_len);
     free(buffer);
