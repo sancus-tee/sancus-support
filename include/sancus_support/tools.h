@@ -20,7 +20,7 @@ int parse_string(ParseState* state, char** str);
 int parse_raw_data(ParseState* state, size_t len, uint8_t** buf);
 int parse_all_raw_data(ParseState* state, uint8_t** buf, size_t* len);
 
-typedef void (*printf_cb)(uint8_t*, size_t);
+typedef int (*printf_cb)(uint8_t*, size_t);
 
 int cb_printf_init(printf_cb cb);
 void cb_printf_finish(void);
