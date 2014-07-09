@@ -427,6 +427,8 @@ static int relocate_sections(Elf32Header* eh, void** addresses)
             return 0;
         }
     }
+
+    return 1;
 }
 
 static int should_add_symbol(SymtabEntry* sym)
@@ -480,6 +482,8 @@ static int update_global_symtab(Elf32Header* eh, ElfModule* em,
             }
         }
     }
+
+    return 1;
 }
 
 ElfModule* elf_load(void* file)

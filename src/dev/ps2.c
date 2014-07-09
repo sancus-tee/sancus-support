@@ -10,6 +10,7 @@ int ps2_init(ps2_calback_t press, ps2_calback_t release)
 {
     cb_press = press;
     cb_release = release;
+    return 1;
 }
 
 static void __attribute__((interrupt(PS2_RX_VECTOR))) ps2_receive(void)

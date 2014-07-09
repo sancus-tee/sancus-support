@@ -62,6 +62,7 @@ int packet_init(LinkApi* api)
 int packet_start(void)
 {
     buf_pos = 0;
+    return 1;
 }
 
 int packet_write(uint8_t* data, size_t len)
