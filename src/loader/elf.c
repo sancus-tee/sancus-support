@@ -191,7 +191,10 @@ static void** load_sections(Elf32Header* eh, ElfModule* em)
 {
     void** addresses = malloc(eh->e_shnum * sizeof(void*));
     if (addresses == NULL)
+    {
+        puts("Out of memory");
         return NULL;
+    }
 
     // these are needed often
     SectionHeader* sh_begin = get_sh_begin(eh);
@@ -419,7 +422,11 @@ static int relocate_sections(Elf32Header* eh, void** addresses)
         if (sh->sh_type == SHT_RELA)
         {
             if (!relocate_section(eh, sh, addresses))
+            {
+                printf("Failed to relocate section %s\n",
+                       get_section_name(eh, sh));
                 return 0;
+            }
         }
         else if (sh->sh_type == SHT_REL)
         {
@@ -530,7 +537,7 @@ ElfModule* elf_load(void* file)
     for (i = 0; i < eh->e_shnum; i++)
     {
         SectionHeader* sh = get_section_header(eh, i);
-        printf("Section %u, name %s, type %u\n",
+        printf("Section %u, name %s, type %lu\n",
                i, get_section_name(eh, sh), sh->sh_type);
     }
 
@@ -545,12 +552,15 @@ ElfModule* elf_load(void* file)
     void** addresses = load_sections(eh, em);
     if (addresses == NULL)
     {
+        puts("Loading sections failed");
         free(em);
         return NULL;
     }
 
+    puts("Relocating sections...");
     if (!relocate_sections(eh, addresses))
     {
+        puts("Relocating sections failed");
         elf_unload(em);
         free(addresses);
         return NULL;
