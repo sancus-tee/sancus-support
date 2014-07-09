@@ -6,8 +6,8 @@
 
 // these weak symbols will be replaced if the automatic symtab generation script
 // is used
-const Symbol __attribute__((weak)) static_symbols[] = {};
-const size_t __attribute__((weak)) num_static_symbols = 0;
+Symbol __attribute__((weak)) static_symbols[] = {};
+size_t __attribute__((weak)) num_static_symbols = 0;
 
 typedef struct SymbolList
 {
