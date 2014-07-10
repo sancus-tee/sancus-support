@@ -278,7 +278,7 @@ void sm_call(ParseState* state)
         default:
             if (!parse_raw_data(state, nargs, &arg_buf))
             {
-                printf("%s: Failed to read raw arguments\n");
+                printf("%s: Failed to read raw arguments\n", error_prefix);
                 return;
             }
 
@@ -292,7 +292,7 @@ void sm_call(ParseState* state)
 
     if (sm == NULL)
     {
-        printf("%s: No SM with ID %u\n", id);
+        printf("%s: No SM with ID %u\n", error_prefix, id);
         return;
     }
 
@@ -313,7 +313,7 @@ void sm_print_identity(ParseState* state)
 
     if (!parse_int(state, &id))
     {
-        printf("%s: Failed to read ID\n");
+        printf("%s: Failed to read ID\n", error_prefix);
         return;
     }
 
@@ -323,15 +323,15 @@ void sm_print_identity(ParseState* state)
         return;
 
     packet_write(sm->public_start,
-                 (char*)sm->public_end - (char*)sm->public_start);
+                 (uint8_t*)sm->public_end - (uint8_t*)sm->public_start);
 
     printf("Identity of SM %s:\n", sm->name);
     print_data(sm->public_start,
-               (char*)sm->public_end - (char*)sm->public_start);
-    print_data((char*)&sm->public_start, 2);
-    print_data((char*)&sm->public_end, 2);
-    print_data((char*)&sm->secret_start, 2);
-    print_data((char*)&sm->secret_end, 2);
+               (uint8_t*)sm->public_end - (uint8_t*)sm->public_start);
+    print_data((uint8_t*)&sm->public_start, 2);
+    print_data((uint8_t*)&sm->public_end, 2);
+    print_data((uint8_t*)&sm->secret_start, 2);
+    print_data((uint8_t*)&sm->secret_end, 2);
 }
 
 struct SancusModule* sm_get_by_id(sm_id id)

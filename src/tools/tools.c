@@ -58,7 +58,7 @@ char* read_string(void)
 
 void print_data(const unsigned char* data, size_t size)
 {
-    int need_nl;
+    int need_nl = 0;
     unsigned i;
     for (i = 0; i < size; i++)
     {
@@ -85,8 +85,9 @@ int uart_printf(const char* str, ...)
 {
     va_list ap;
     va_start(ap, str);
-    vuprintf(uart_putchar, str, ap);
+    int ret = vuprintf(uart_putchar, str, ap);
     va_end(ap);
+    return ret;
 }
 
 struct ParseState
@@ -144,7 +145,7 @@ int parse_string(ParseState* state, char** str)
         return 0;
 
     size_t str_len = end - state->buf;
-    *str = state->buf;
+    *str = (char*)state->buf;
     advance_state(state, str_len + 1);
     return 1;
 }
@@ -214,6 +215,7 @@ int cb_printf(const char* str, ...)
 {
     va_list ap;
     va_start(ap, str);
-    vuprintf(buf_putchar, str, ap);
+    int ret = vuprintf(buf_putchar, str, ap);
     va_end(ap);
+    return ret;
 }
