@@ -181,32 +181,22 @@ free_mem:
     free_parse_state(state);
 }
 
-static void dummy_idle_callback(int idle)
-{
-}
-
 static void dummy_tick_callback()
 {
 }
 
-void event_loop_start(idle_callback set_idle, tick_callback tick)
+void event_loop_start(tick_callback tick)
 {
-    if (set_idle == NULL)
-        set_idle = dummy_idle_callback;
     if (tick == NULL)
         tick = dummy_tick_callback;
 
-    set_idle(1);
     puts("Event loop started");
 
     while (1)
     {
-        set_idle(0);
-
         if (packet_available())
             handle_command();
 
         tick();
-        set_idle(1);
     }
 }

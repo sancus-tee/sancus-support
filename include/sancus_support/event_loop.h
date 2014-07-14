@@ -4,7 +4,7 @@
 typedef void (*idle_callback)(int);
 typedef void (*tick_callback)(void);
 
-void event_loop_start(idle_callback set_idle, tick_callback tick);
+void event_loop_start(tick_callback tick);
 
 #endif
 
