@@ -11,4 +11,7 @@ set(HEADERS
     sancus_support/uart.h
 )
 
-install(FILES ${HEADERS} DESTINATION "${INSTALL_INCLUDES_DIR}/sancus_support")
+set(BASE_INSTALL_DIR "${INSTALL_INCLUDES_DIR}/sancus_support")
+install(FILES ${HEADERS} DESTINATION ${BASE_INSTALL_DIR})
+install(FILES sancus_support/private/symbol.h
+        DESTINATION ${BASE_INSTALL_DIR}/private)
