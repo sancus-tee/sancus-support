@@ -55,7 +55,7 @@ int main()
     __eint();
 
     puts("main() started");
-    event_loop_start(NULL, NULL);
+    event_loop_start(NULL);
     puts("main() done");
     while (1) {}
 }
