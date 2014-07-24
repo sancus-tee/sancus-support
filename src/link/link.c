@@ -257,7 +257,6 @@ Frame* link_get_next_frame(void)
 
 int link_send_frame(Frame* frame)
 {
-    printf("Sending %u byte frame\n", frame->len);
     uint8_t* buf = malloc(cobs_max_encoded_len(frame->len));
 
     if (buf == NULL)
@@ -272,8 +271,6 @@ int link_send_frame(Frame* frame)
         free(buf);
         return 0;
     }
-
-    printf("Frame encoded in %u + 2 bytes\n", len);
 
     phy.write(0x00);
 
