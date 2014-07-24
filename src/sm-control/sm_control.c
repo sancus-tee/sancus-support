@@ -70,7 +70,7 @@ static void append_sm_list(SmList* sm)
     sm->next = NULL;
 }
 
-static struct SancusModule* register_sm(char* name, uint16_t vendor_id,
+static struct SancusModule* register_sm(const char* name, uint16_t vendor_id,
                                         ElfModule* em)
 {
     SmList* sm_list = malloc(sizeof(SmList));
@@ -88,7 +88,7 @@ static struct SancusModule* register_sm(char* name, uint16_t vendor_id,
     if (sm->public_start == NULL || sm->public_end == NULL ||
         sm->secret_start == NULL || sm->secret_end == NULL)
     {
-        puts("Failed to find SPM symbols");
+        puts("Failed to find SM symbols");
         free(sm_list);
         return NULL;
     }
@@ -98,7 +98,7 @@ static struct SancusModule* register_sm(char* name, uint16_t vendor_id,
 #else
     if (!sancus_enable(sm))
     {
-        puts("Protecting SPM failed");
+        puts("Protecting SM failed");
         free(sm_list);
         return NULL;
     }
@@ -106,7 +106,7 @@ static struct SancusModule* register_sm(char* name, uint16_t vendor_id,
 
     append_sm_list(sm_list);
 
-    printf("Registered SPM %s with id 0x%x for vendor 0x%x\n",
+    printf("Registered SM %s with id 0x%x for vendor 0x%x\n",
            name, sm->id, vendor_id);
     printf(" - Public: [%p, %p]\n", sm->public_start, sm->public_end);
     printf(" - Secret: [%p, %p]\n", sm->secret_start, sm->secret_end);
@@ -122,73 +122,28 @@ int sm_register_existing(struct SancusModule* sm)
     return 1;
 }
 
-void sm_load(ParseState* state)
+sm_id sm_load(void* file, const char* name, vendor_id vid)
 {
-    static const char* error_prefix = "Error reading SmLoad packet";
-
-    sm_id ret_id = 0;
-    uint8_t buf[2];
-    char* name = NULL;
-
-    if (!parse_string(state, &name))
-    {
-        printf("%s: Expected SM name\n", error_prefix);
-        goto out;
-    }
-
-    uint16_t vendor_id;
-
-    if (!parse_int(state, &vendor_id))
-    {
-        printf("%s: Expected vendor ID\n", error_prefix);
-        goto out;
-    }
-
-    uint16_t size;
-
-    if (!parse_int(state, &size))
-    {
-        printf("%s: Expected SM size\n", error_prefix);
-        goto out;
-    }
-
-    uint8_t* file;
-
-    if (!parse_raw_data(state, size, &file))
-    {
-        printf("%s: Expected %u bytes of data\n", error_prefix, size);
-        goto out;
-    }
-
-    printf("Accepted SPM %s for vendor %u\n", name, vendor_id);
-    printf("Read %u bytes:\n", size);
-    print_data(file, size);
-    printf("Loading...\n");
-
     ElfModule* em = elf_load(file);
 
     if (em == NULL)
     {
         puts("Error loading module");
-        goto out;
+        return 0;
     }
 
     puts("Module successfully loaded");
 
-    struct SancusModule* sm = register_sm(name, vendor_id, em);
+    struct SancusModule* sm = register_sm(name, vid, em);
 
     if (sm == NULL)
     {
         puts("Registering SPM failed");
-        goto out;
+        return 0;
     }
 
-    ret_id = sm->id;
-
-out:
-    buf[0] = ret_id >> 8;
-    buf[1] = ret_id & 0xff;
-    packet_write(buf, sizeof(buf));
+    puts("Module successfully registered");
+    return sm->id;
 }
 
 typedef struct

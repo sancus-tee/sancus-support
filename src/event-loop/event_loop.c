@@ -33,6 +33,53 @@ static void echo(ParseState* state)
         puts("Error reading Echo packet");
 }
 
+static void load_sancus_module(ParseState* state)
+{
+    static const char* error_prefix = "Error reading SmLoad packet";
+
+    sm_id ret_id = 0;
+    uint8_t buf[2];
+    char* name = NULL;
+
+    if (!parse_string(state, &name))
+    {
+        printf("%s: Expected SM name\n", error_prefix);
+        goto out;
+    }
+
+    uint16_t vid;
+
+    if (!parse_int(state, &vid))
+    {
+        printf("%s: Expected vendor ID\n", error_prefix);
+        goto out;
+    }
+
+    uint16_t size;
+
+    if (!parse_int(state, &size))
+    {
+        printf("%s: Expected SM size\n", error_prefix);
+        goto out;
+    }
+
+    uint8_t* file;
+
+    if (!parse_raw_data(state, size, &file))
+    {
+        printf("%s: Expected %u bytes of data\n", error_prefix, size);
+        goto out;
+    }
+
+    printf("Loading SM %s for vendor %u with size %u\n", name, vid, size);
+    ret_id = sm_load(file, name, vid);
+
+out:
+    buf[0] = ret_id >> 8;
+    buf[1] = ret_id & 0xff;
+    packet_write(buf, sizeof(buf));
+}
+
 static void load_data(ParseState* state)
 {
     static const char* error_prefix = "Error reading LoadData packet";
@@ -144,7 +191,7 @@ static void handle_command(void)
             break;
 
         case SmLoad:
-            sm_load(state);
+            load_sancus_module(state);
             break;
 
         case SmCall:
