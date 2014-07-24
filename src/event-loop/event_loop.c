@@ -221,6 +221,35 @@ static void print_uart_data(ParseState* state)
     printf("\n");
 }
 
+static void print_sancus_module_identity(ParseState* state)
+{
+    static const char* error_prefix = "Error reading SmIdentity packet";
+
+    sm_id id;
+
+    if (!parse_int(state, &id))
+    {
+        printf("%s: Failed to read ID\n", error_prefix);
+        return;
+    }
+
+    struct SancusModule* sm = sm_get_by_id(id);
+
+    if (sm == NULL)
+        return;
+
+    packet_write(sm->public_start,
+                 (uint8_t*)sm->public_end - (uint8_t*)sm->public_start);
+
+    printf("Identity of SM %s:\n", sm->name);
+    print_data(sm->public_start,
+               (uint8_t*)sm->public_end - (uint8_t*)sm->public_start);
+    print_data((uint8_t*)&sm->public_start, 2);
+    print_data((uint8_t*)&sm->public_end, 2);
+    print_data((uint8_t*)&sm->secret_start, 2);
+    print_data((uint8_t*)&sm->secret_end, 2);
+}
+
 static void handle_command(void)
 {
     Packet* packet = packet_get_next();
@@ -250,7 +279,7 @@ static void handle_command(void)
             break;
 
         case SmIdentity:
-            sm_print_identity(state);
+            print_sancus_module_identity(state);
             break;
 
         case LoadData:

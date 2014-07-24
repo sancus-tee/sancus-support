@@ -1,10 +1,7 @@
 #include "sm_control.h"
 
-#include "uart.h"
 #include "elf.h"
-#include "tools.h"
 #include "global_symtab.h"
-#include "packet.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -229,35 +226,6 @@ int sm_call(sm_id id, uint16_t index, uint16_t* args, size_t nargs)
 
     enter_sm(&ci);
     return 1;
-}
-
-void sm_print_identity(ParseState* state)
-{
-    static const char* error_prefix = "Error reading SmIdentity packet";
-
-    sm_id id;
-
-    if (!parse_int(state, &id))
-    {
-        printf("%s: Failed to read ID\n", error_prefix);
-        return;
-    }
-
-    struct SancusModule* sm = sm_get_by_id(id);
-
-    if (sm == NULL)
-        return;
-
-    packet_write(sm->public_start,
-                 (uint8_t*)sm->public_end - (uint8_t*)sm->public_start);
-
-    printf("Identity of SM %s:\n", sm->name);
-    print_data(sm->public_start,
-               (uint8_t*)sm->public_end - (uint8_t*)sm->public_start);
-    print_data((uint8_t*)&sm->public_start, 2);
-    print_data((uint8_t*)&sm->public_end, 2);
-    print_data((uint8_t*)&sm->secret_start, 2);
-    print_data((uint8_t*)&sm->secret_end, 2);
 }
 
 struct SancusModule* sm_get_by_id(sm_id id)
