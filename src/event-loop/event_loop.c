@@ -80,6 +80,57 @@ out:
     packet_write(buf, sizeof(buf));
 }
 
+static void call_sancus_module(ParseState* state)
+{
+    static const char* error_prefix = "Error reading SmCall packet";
+
+    uint16_t id, index, nargs;
+
+    if (!parse_int(state, &id)    ||
+        !parse_int(state, &index) ||
+        !parse_int(state, &nargs))
+    {
+        printf("%s: Incorrect header\n", error_prefix);
+        return;
+    }
+
+    uint16_t args[4];
+    uint8_t* arg_buf = NULL;
+
+    switch (nargs)
+    {
+        case 0:
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+            for (uint16_t i = 0; i < nargs; i++)
+            {
+                if (!parse_int(state, &args[i]))
+                {
+                    printf("%s: Failed to read argument %u\n", error_prefix, i);
+                    return;
+                }
+            }
+
+            break;
+
+        default:
+            if (!parse_raw_data(state, nargs, &arg_buf))
+            {
+                printf("%s: Failed to read raw arguments\n", error_prefix);
+                return;
+            }
+
+            nargs = 2;
+            args[0] = (uint16_t)arg_buf;
+            args[1] = nargs;
+            break;
+    }
+
+    sm_call(id, index, args, nargs);
+}
+
 static void load_data(ParseState* state)
 {
     static const char* error_prefix = "Error reading LoadData packet";
@@ -195,7 +246,7 @@ static void handle_command(void)
             break;
 
         case SmCall:
-            sm_call(state);
+            call_sancus_module(state);
             break;
 
         case SmIdentity:

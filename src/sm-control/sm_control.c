@@ -192,72 +192,43 @@ static void __attribute__((optimize("-O1"))) enter_sm(CallInfo* ci)
         : "r6", "r7", "r12", "r13", "r14", "r15");
 }
 
-void sm_call(ParseState* state)
+int sm_call(sm_id id, uint16_t index, uint16_t* args, size_t nargs)
 {
-    static const char* error_prefix = "Error reading SmCall packet";
-
-    uint16_t id, index, nargs;
-
-    if (!parse_int(state, &id)    ||
-        !parse_int(state, &index) ||
-        !parse_int(state, &nargs))
-    {
-        printf("%s: Incorrect header\n", error_prefix);
-        return;
-    }
-
-    CallInfo ci;
-    uint16_t* args[] = {&ci.arg1, &ci.arg2, &ci.arg3, &ci.arg4};
-    uint8_t* arg_buf = NULL;
-
-    switch (nargs)
-    {
-        case 0:
-        case 1:
-        case 2:
-        case 3:
-        case 4:
-            ci.nargs = nargs;
-
-            for (uint16_t i = 0; i < nargs; i++)
-            {
-                if (!parse_int(state, args[i]))
-                {
-                    printf("%s: Failed to read argument %u\n", error_prefix, i);
-                    return;
-                }
-            }
-
-            break;
-
-        default:
-            if (!parse_raw_data(state, nargs, &arg_buf))
-            {
-                printf("%s: Failed to read raw arguments\n", error_prefix);
-                return;
-            }
-
-            ci.nargs = 2;
-            ci.arg1 = (uint16_t)arg_buf;
-            ci.arg2 = nargs;
-            break;
-    }
-
     struct SancusModule* sm = sm_get_by_id(id);
 
     if (sm == NULL)
     {
-        printf("%s: No SM with ID %u\n", error_prefix, id);
-        return;
+        printf("No SM with ID %u\n", id);
+        return 0;
     }
 
+    CallInfo ci;
     ci.entry = sm->public_start;
     ci.index = index;
+    ci.nargs = nargs;
+
+    switch (nargs)
+    {
+        case 4:
+            ci.arg4 = args[3];
+        case 3:
+            ci.arg3 = args[2];
+        case 2:
+            ci.arg2 = args[1];
+        case 1:
+            ci.arg1 = args[0];
+        case 0:
+            break;
+        default:
+            printf("Illegal number of arguments: %u\n", nargs);
+            return 0;
+    }
 
     printf("Accepted call to SM %s, index %u, args %u\n",
            sm->name, index, nargs);
 
     enter_sm(&ci);
+    return 1;
 }
 
 void sm_print_identity(ParseState* state)
