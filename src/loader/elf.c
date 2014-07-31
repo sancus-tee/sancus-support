@@ -8,7 +8,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-
 struct ElfModule
 {
     void* pmem;
@@ -482,8 +481,19 @@ static int update_global_symtab(Elf32Header* eh, ElfModule* em,
                 {
                     const char* name = get_symbol_name(eh, sh, sym);
                     void* value;
-                    get_local_symbol_value(sym, addresses, &value);
-                    add_global_symbol(name, value, em);
+
+                    if (!get_local_symbol_value(sym, addresses, &value))
+                    {
+                        printf("Failed to find local symbol %s\n", name);
+                        return 0;
+                    }
+
+                    if (!add_global_symbol(name, value, em))
+                    {
+                        printf("Failed to add global symbol %s\n", name);
+                        return 0;
+                    }
+
                     printf("Added global symbol %s: %p\n", name, value);
                 }
             }

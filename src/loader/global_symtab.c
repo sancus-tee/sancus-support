@@ -67,8 +67,13 @@ static int add_symbol(const char* name, void* value, ElfModule* owner,
     if (*current == NULL)
         return 0;
 
-    char* tmp_name = malloc(strlen(name) + 1);
-    strcpy(tmp_name, name);
+    char* tmp_name = strdup(name);
+    if (tmp_name == NULL)
+    {
+        free(current);
+        return 0;
+    }
+
     (*current)->symbol.name = tmp_name;
     (*current)->symbol.value = value;
     (*current)->is_section = is_section;
