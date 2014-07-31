@@ -30,7 +30,7 @@ def _find_default_libs():
 
 def _extract_ar(ar_file):
     tmp_dir = tempfile.mkdtemp()
-    subprocess.check_call(['ar', 'x', ar_file], cwd=tmp_dir)
+    subprocess.check_call(['ar', 'x', os.path.abspath(ar_file)], cwd=tmp_dir)
     return ['{}/{}'.format(tmp_dir, file) for file in os.listdir(tmp_dir)]
 
 
