@@ -4,8 +4,9 @@ import argparse
 import subprocess
 import tempfile
 import os
+import re
 from elftools.elf.elffile import ELFFile
-from elftools.elf.sections import SymbolTableSection
+from elftools.elf.sections import SymbolTableSection, Symbol
 
 
 def _find_std_lib(name):
@@ -43,6 +44,10 @@ def _should_add_symbol(symbol):
            sym_sec != 'SHN_UNDEF'
 
 
+def _is_valid_symbol_name(name):
+    return re.match('[a-zA-Z_][a-zA-Z0-9_]*', name) is not None
+
+
 def _generate_symbols_in_object(object):
     with open(object, 'rb') as file:
         for section in ELFFile(file).iter_sections():
@@ -57,6 +62,16 @@ def _generate_symbols_in_lib(lib):
         yield from _generate_symbols_in_object(object)
 
 
+def _generate_symbols_in_txt(txt):
+    with open(txt, 'r') as file:
+        for line in file:
+            name = line.rstrip()
+            if _is_valid_symbol_name(name):
+                yield name
+            else:
+                print('Illegal symbol name: "{}"'.format(name))
+
+
 def _generate_symbols(inputs):
     for input in inputs:
         _, ext = os.path.splitext(input)
@@ -64,6 +79,8 @@ def _generate_symbols(inputs):
             yield from _generate_symbols_in_object(input)
         elif ext == '.a':
             yield from _generate_symbols_in_lib(input)
+        elif ext == '.txt':
+            yield from _generate_symbols_in_txt(input)
         else:
             raise ValueError('Unknown input extension {}'.format(ext))
 
@@ -73,9 +90,11 @@ def _emit_symbols(inputs, ignores=[]):
     sym_lines = []
 
     for symbol in _generate_symbols(inputs):
-        name = symbol.name.decode('ascii')
+        if isinstance(symbol, Symbol):
+            name = symbol.name.decode('ascii')
+        else:
+            name = symbol
         if not name in ignores:
-            type = symbol['st_info']['type']
             if name == 'putchar':
                 decl = 'extern int putchar(int c);'
             else:
