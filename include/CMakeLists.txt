@@ -9,6 +9,8 @@ set(HEADERS
     sancus_support/timer.h
     sancus_support/tools.h
     sancus_support/uart.h
+    sancus_support/link.h
+    sancus_support/packet.h
 )
 
 set(BASE_INSTALL_DIR "${INSTALL_INCLUDES_DIR}/sancus_support")
