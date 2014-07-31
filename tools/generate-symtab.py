@@ -85,25 +85,29 @@ def _generate_symbols(inputs):
             raise ValueError('Unknown input extension {}'.format(ext))
 
 
-def _emit_symbols(inputs, ignores=[]):
+def _generate_symbol_names(inputs):
+    for symbol in _generate_symbols(inputs):
+        if isinstance(symbol, Symbol):
+            yield symbol.name.decode('ascii')
+        else:
+            yield symbol
+
+
+def _emit_symbols(names, included_symbols, ignores=[]):
     decl_lines = []
     sym_lines = []
 
-    for symbol in _generate_symbols(inputs):
-        if isinstance(symbol, Symbol):
-            name = symbol.name.decode('ascii')
-        else:
-            name = symbol
+    for name in names:
         if not name in ignores:
-            if name == 'putchar':
-                decl = 'extern int putchar(int c);'
-            else:
-                decl = 'extern char {};'.format(name)
-            decl_lines.append(decl)
+            if not name in included_symbols:
+                if name == 'putchar':
+                    decl = 'extern int putchar(int c);'
+                else:
+                    decl = 'extern char {};'.format(name)
+                decl_lines.append(decl)
             sym_lines.append('    {{"{0}", &{0}}}'.format(name))
             if args.verbose:
                 print('Added symbol', name)
-
     return (decl_lines, sym_lines)
 
 
@@ -128,10 +132,13 @@ includes = ('sancus_support/private/symbol.h', 'errno.h', 'math.h', 'stdint.h',
             'stdio.h', 'stdlib.h', 'string.h', 'ctype.h', 'byteswap.h',
             'setjmp.h', 'sancus/sm_support.h')
 
-input_decls, input_syms = _emit_symbols(args.inputs,
-                                        ignores=['sancus_enable'])
-_, libs_syms = _emit_symbols(args.additional_libs + _find_default_libs(),
-                             ignores=['ffs', 'rindex', 'index'])
+default_libs = _find_default_libs()
+inputs = args.inputs + args.additional_libs + default_libs
+symbols = _generate_symbol_names(inputs)
+included_libs = [_find_std_lib('libc')] + _find_default_libs()
+included_symbols = list(_generate_symbol_names(included_libs))
+ignores = ['sancus_enable', 'ffs', 'rindex', 'index']
+input_decls, input_syms = _emit_symbols(symbols, included_symbols, ignores)
 
 lines = []
 
@@ -140,7 +147,7 @@ for include in includes:
 
 lines.append('\n'.join(input_decls))
 lines.append('const Symbol static_symbols[] = {')
-lines.append(',\n'.join(input_syms + libs_syms))
+lines.append(',\n'.join(input_syms))
 lines.append('};')
 lines.append('const unsigned num_static_symbols = ' +
              'sizeof(static_symbols) / sizeof(Symbol);')
