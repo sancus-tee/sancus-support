@@ -8,16 +8,19 @@
 #include <stdio.h>
 #include <stdint.h>
 
+#ifndef STACK_SIZE
+#define STACK_SIZE 512
+#endif
+
 #define DEBUG_MEMMGR_SUPPORT_STATS 1
-
-#define STACK_SIZE 256
 #define MIN_POOL_ALLOC_QUANTAS 16
-
+#define CANARY_VALUE 0xbabe
 
 typedef unsigned char byte;
 typedef unsigned long ulong;
 
 typedef ulong Align;
+typedef uint16_t Canary;
 
 union mem_header_union
 {
@@ -49,16 +52,29 @@ static mem_header_t* freep = 0;
 
 // Static pool for new allocations
 //
-// static byte pool[POOL_SIZE] = {0};
 extern char __bss_end;
 extern char __stack;
 
-#define POOL_SIZE ((size_t)&__stack - STACK_SIZE - (size_t)&__bss_end)
+#define POOL_SIZE ((uintptr_t)&__stack - STACK_SIZE - (uintptr_t)&__bss_end - \
+                   sizeof(Canary))
 
 static byte* pool = (byte*)&__bss_end;
 static ulong pool_free_pos = 0;
+static Canary* canary;
 
 void free(void* ap);
+
+void __attribute__((constructor)) memmgr_init()
+{
+    canary = (Canary*)((uintptr_t)&__stack - STACK_SIZE - sizeof(Canary));
+    *canary = CANARY_VALUE;
+}
+
+static void check_canary()
+{
+    if (*canary != CANARY_VALUE)
+        puts("WARNING: stack overflow detected");
+}
 
 void memmgr_print_stats()
 {
@@ -143,6 +159,8 @@ static mem_header_t* get_mem_from_pool(ulong nquantas)
 //
 void* malloc(size_t nbytes)
 {
+    check_canary();
+
     mem_header_t* p;
     mem_header_t* prevp;
 
@@ -212,6 +230,8 @@ void* malloc(size_t nbytes)
 //
 void free(void* ap)
 {
+    check_canary();
+
     mem_header_t* block;
     mem_header_t* p;
 
