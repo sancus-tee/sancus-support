@@ -154,9 +154,8 @@ typedef struct
     uint16_t arg4;
 } CallInfo;
 
-// we need a bit of optimization here to make GCC not use all available
-// registers
-static void __attribute__((optimize("-O1"))) enter_sm(CallInfo* ci)
+// if this function is inlined, GCC messes with the stack pointer
+static void __attribute__((noinline)) enter_sm(CallInfo* ci)
 {
     uint16_t args_left = ci->nargs;
 
@@ -175,6 +174,7 @@ static void __attribute__((optimize("-O1"))) enter_sm(CallInfo* ci)
         "dec  %0\n\t"
 
         "1:\n\t"
+        "push r2\n\t"
         "mov  r1, &__unprotected_sp\n\t"
         "mov  %5, r6\n\t"
         "mov  #1f, r7\n\t"
@@ -182,7 +182,7 @@ static void __attribute__((optimize("-O1"))) enter_sm(CallInfo* ci)
         "br   %6\n\t"
         "1:\n\t"
         "mov  &__unprotected_sp, r1\n\t"
-        "eint\n\t"
+        "pop r2\n\t"
         :
         : "r"(args_left), "m"(ci->arg1), "m"(ci->arg2), "m"(ci->arg3),
           "m"(ci->arg4), "m"(ci->index), "m"(ci->entry)
