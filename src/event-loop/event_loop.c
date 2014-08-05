@@ -128,7 +128,7 @@ static void call_sancus_module(ParseState* state)
             break;
     }
 
-    sm_call(id, index, args, nargs);
+    sm_call_id(id, index, args, nargs);
 }
 
 static void load_data(ParseState* state)

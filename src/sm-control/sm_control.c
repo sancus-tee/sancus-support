@@ -189,16 +189,9 @@ static void __attribute__((optimize("-O1"))) enter_sm(CallInfo* ci)
         : "r6", "r7", "r12", "r13", "r14", "r15");
 }
 
-int sm_call(sm_id id, uint16_t index, uint16_t* args, size_t nargs)
+int sm_call_module(struct SancusModule* sm, uint16_t index,
+                   uint16_t* args, size_t nargs)
 {
-    struct SancusModule* sm = sm_get_by_id(id);
-
-    if (sm == NULL)
-    {
-        printf("No SM with ID %u\n", id);
-        return 0;
-    }
-
     CallInfo ci;
     ci.entry = sm->public_start;
     ci.index = index;
@@ -226,6 +219,19 @@ int sm_call(sm_id id, uint16_t index, uint16_t* args, size_t nargs)
 
     enter_sm(&ci);
     return 1;
+}
+
+int sm_call_id(sm_id id, uint16_t index, uint16_t* args, size_t nargs)
+{
+    struct SancusModule* sm = sm_get_by_id(id);
+
+    if (sm == NULL)
+    {
+        printf("No SM with ID %u\n", id);
+        return 0;
+    }
+
+    return sm_call_module(sm, index, args, nargs);
 }
 
 struct SancusModule* sm_get_by_id(sm_id id)
