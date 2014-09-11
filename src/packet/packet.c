@@ -1,5 +1,7 @@
 #include "packet.h"
 
+#include "private/debug.h"
+
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -93,7 +95,7 @@ Packet* received_packet = NULL;
 
 static void receive_packet(void)
 {
-    static const char* oom_msg = "Dropping packet because of OOM";
+    DBG_VAR(static const char* oom_msg = "Dropping packet because of OOM");
 
     if (received_packet != NULL || link.frames_available() == 0)
         return;
@@ -102,13 +104,13 @@ static void receive_packet(void)
 
     if (frame->len <= 1)
     {
-        puts("Dropping illegal packet");
+        DBG_PRINTF("Dropping illegal packet\n");
         goto out;
     }
 
     if (frame->data[0] != 1)
     {
-        puts("Multi-frame packets are not supported yet");
+        DBG_PRINTF("Multi-frame packets are not supported yet\n");
         goto out;
     }
 
@@ -116,7 +118,7 @@ static void receive_packet(void)
 
     if (packet == NULL)
     {
-        puts(oom_msg);
+        DBG_PRINTF("%s\n", oom_msg);
         goto out;
     }
 
@@ -126,7 +128,7 @@ static void receive_packet(void)
     if (packet->data == NULL)
     {
         free(packet);
-        puts(oom_msg);
+        DBG_PRINTF("%s\n", oom_msg);
         goto out;
     }
 

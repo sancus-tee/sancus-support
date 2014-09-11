@@ -2,6 +2,7 @@
 
 #include "elf.h"
 #include "global_symtab.h"
+#include "private/debug.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -32,7 +33,7 @@ static SmList* find_sm_list(sm_id id)
 
     if (current == NULL)
     {
-        printf("No SM with ID 0x%x\n", id);
+        DBG_PRINTF("No SM with ID 0x%x\n", id);
         return NULL;
     }
 
@@ -85,7 +86,7 @@ static struct SancusModule* register_sm(const char* name, uint16_t vendor_id,
     if (sm->public_start == NULL || sm->public_end == NULL ||
         sm->secret_start == NULL || sm->secret_end == NULL)
     {
-        puts("Failed to find SM symbols");
+        DBG_PRINTF("Failed to find SM symbols\n");
         free(sm_list);
         return NULL;
     }
@@ -95,7 +96,7 @@ static struct SancusModule* register_sm(const char* name, uint16_t vendor_id,
 #else
     if (!sancus_enable(sm))
     {
-        puts("Protecting SM failed");
+        DBG_PRINTF("Protecting SM failed\n");
         free(sm_list);
         return NULL;
     }
@@ -103,10 +104,10 @@ static struct SancusModule* register_sm(const char* name, uint16_t vendor_id,
 
     append_sm_list(sm_list);
 
-    printf("Registered SM %s with id 0x%x for vendor 0x%x\n",
-           name, sm->id, vendor_id);
-    printf(" - Public: [%p, %p]\n", sm->public_start, sm->public_end);
-    printf(" - Secret: [%p, %p]\n", sm->secret_start, sm->secret_end);
+    DBG_PRINTF("Registered SM %s with id 0x%x for vendor 0x%x\n",
+               name, sm->id, vendor_id);
+    DBG_PRINTF(" - Public: [%p, %p]\n", sm->public_start, sm->public_end);
+    DBG_PRINTF(" - Secret: [%p, %p]\n", sm->secret_start, sm->secret_end);
     return sm;
 }
 
@@ -125,21 +126,21 @@ sm_id sm_load(void* file, const char* name, vendor_id vid)
 
     if (em == NULL)
     {
-        puts("Error loading module");
+        DBG_PRINTF("Error loading module\n");
         return 0;
     }
 
-    puts("Module successfully loaded");
+    DBG_PRINTF("Module successfully loaded\n");
 
     struct SancusModule* sm = register_sm(name, vid, em);
 
     if (sm == NULL)
     {
-        puts("Registering SPM failed");
+        DBG_PRINTF("Registering SPM failed\n");
         return 0;
     }
 
-    puts("Module successfully registered");
+    DBG_PRINTF("Module successfully registered\n");
     return sm->id;
 }
 
@@ -155,7 +156,7 @@ typedef struct
 } CallInfo;
 
 // if this function is inlined, GCC messes with the stack pointer
-static void __attribute__((noinline)) enter_sm(CallInfo* ci)
+static void __attribute__((noinline, optimize("-O1"))) enter_sm(CallInfo* ci)
 {
     uint16_t args_left = ci->nargs;
 
@@ -210,12 +211,12 @@ int sm_call_module(struct SancusModule* sm, uint16_t index,
         case 0:
             break;
         default:
-            printf("Illegal number of arguments: %u\n", nargs);
+            DBG_PRINTF("Illegal number of arguments: %u\n", nargs);
             return 0;
     }
 
-    printf("Accepted call to SM %s, index %u, args %u\n",
-           sm->name, index, nargs);
+    DBG_PRINTF("Accepted call to SM %s, index %u, args %u\n",
+               sm->name, index, nargs);
 
     enter_sm(&ci);
     return 1;
@@ -227,7 +228,7 @@ int sm_call_id(sm_id id, uint16_t index, uint16_t* args, size_t nargs)
 
     if (sm == NULL)
     {
-        printf("No SM with ID %u\n", id);
+        DBG_PRINTF("No SM with ID %u\n", id);
         return 0;
     }
 

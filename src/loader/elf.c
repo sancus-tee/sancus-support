@@ -2,6 +2,7 @@
 
 #include "pmem.h"
 #include "global_symtab.h"
+#include "private/debug.h"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -191,7 +192,7 @@ static void** load_sections(Elf32Header* eh, ElfModule* em)
     void** addresses = malloc(eh->e_shnum * sizeof(void*));
     if (addresses == NULL)
     {
-        puts("Out of memory");
+        DBG_PRINTF("Out of memory\n");
         return NULL;
     }
 
@@ -220,7 +221,7 @@ static void** load_sections(Elf32Header* eh, ElfModule* em)
     if (pmem_size == 0)
     {
         free(addresses);
-        puts("No program code to load");
+        DBG_PRINTF("No program code to load\n");
         return NULL;
     }
 
@@ -228,7 +229,7 @@ static void** load_sections(Elf32Header* eh, ElfModule* em)
     if (pmem_start == NULL)
     {
         free(addresses);
-        puts("Not enough ROM");
+        DBG_PRINTF("Not enough ROM\n");
         return NULL;
     }
 
@@ -240,13 +241,13 @@ static void** load_sections(Elf32Header* eh, ElfModule* em)
         {
             free(addresses);
             pmem_free(pmem_start);
-            puts("Not enough RAM");
+            DBG_PRINTF("Not enough RAM\n");
             return NULL;
         }
     }
 
-    printf("Allocated memory: ROM %uB @%p, RAM %uB @%p\n",
-           pmem_size, pmem_start, dmem_size, dmem_start);
+    DBG_PRINTF("Allocated memory: ROM %uB @%p, RAM %uB @%p\n",
+               pmem_size, pmem_start, dmem_size, dmem_start);
 
     char* pmem_next = pmem_start;
     char* dmem_next = dmem_start;
@@ -275,15 +276,15 @@ static void** load_sections(Elf32Header* eh, ElfModule* em)
             if (sh->sh_type != SHT_NOBITS)
             {
                 // data or text section
-                printf("Copying %luB of section %ld to %p\n",
-                       sh->sh_size, index, dest);
+                DBG_PRINTF("Copying %luB of section %ld to %p\n",
+                           sh->sh_size, index, dest);
                 memcpy(dest, src, sh->sh_size);
             }
             else
             {
                 // bss section
-                printf("Initializing %luB of section %ld with 0's\n",
-                       sh->sh_size, index);
+                DBG_PRINTF("Initializing %luB of section %ld with 0's\n",
+                           sh->sh_size, index);
                 memset(dest, 0, sh->sh_size);
             }
 
@@ -311,7 +312,7 @@ static int get_local_symbol_value(SymtabEntry* sym, void** addresses,
         // absolute value; should fit in 16 bits
         if (sym->st_value > 0xffff)
         {
-            puts("Absolute value too large");
+            DBG_PRINTF("Absolute value too large\n");
             return 0;
         }
 
@@ -327,12 +328,12 @@ static int get_local_symbol_value(SymtabEntry* sym, void** addresses,
     }
     else
     {
-        printf("Unhandled symbol type: ");
+        DBG_PRINTF("Unhandled symbol type: ");
 
         if (sym->st_shndx == SHN_COMMON)
-            printf("COMMON\n");
+            DBG_PRINTF("COMMON\n");
         else
-            printf("%u\n", sym->st_shndx);
+            DBG_PRINTF("%u\n", sym->st_shndx);
 
         return 0;
     }
@@ -344,18 +345,18 @@ static int relocate_section(Elf32Header* eh, SectionHeader* rela_sh,
     SectionHeader* sh = get_section_header(eh, rela_sh->sh_info);
     if (sh == NULL)
     {
-        puts("Relocation refers to non-existing section");
+        DBG_PRINTF("Relocation refers to non-existing section\n");
         return 0;
     }
 
     SectionHeader* symtab_sh = get_section_header(eh, rela_sh->sh_link);
     if (symtab_sh == NULL)
     {
-        puts("Relocation refers to non-existing symbol table");
+        DBG_PRINTF("Relocation refers to non-existing symbol table\n");
         return 0;
     }
 
-    printf("Relocating section %s\n", get_section_name(eh, sh));
+    DBG_PRINTF("Relocating section %s\n", get_section_name(eh, sh));
 
     SymtabEntry* symtab = (SymtabEntry*)((char*)eh + symtab_sh->sh_offset);
     char* base_addr = addresses[sh - get_sh_begin(eh)];
@@ -384,8 +385,8 @@ static int relocate_section(Elf32Header* eh, SectionHeader* rela_sh,
 
         if (!ok)
         {
-            printf("Undefined reference to symbol '%s'\n",
-                   get_symbol_name(eh, symtab_sh, sym));
+            DBG_PRINTF("Undefined reference to symbol '%s'\n",
+                       get_symbol_name(eh, symtab_sh, sym));
             return 0;
         }
 
@@ -400,14 +401,14 @@ static int relocate_section(Elf32Header* eh, SectionHeader* rela_sh,
         }
         else
         {
-            printf("Unkown relocation type %u\n", rel_type);
+            DBG_PRINTF("Unkown relocation type %u\n", rel_type);
             return 0;
         }
 
-        SectionHeader* ref_sh = get_section_header(eh, sym->st_shndx);
-        printf("%p: ref to %s+%ld (%s+%lu) patched to %p\n",
-               rel_addr, get_symbol_name(eh, symtab_sh, sym), re->r_addend,
-               get_section_name(eh, ref_sh), sym->st_value, sym_addr);
+        DBG_VAR(SectionHeader* ref_sh = get_section_header(eh, sym->st_shndx));
+        DBG_PRINTF("%p: ref to %s+%ld (%s+%lu) patched to %p\n",
+                   rel_addr, get_symbol_name(eh, symtab_sh, sym), re->r_addend,
+                   get_section_name(eh, ref_sh), sym->st_value, sym_addr);
     }
 
     return 1;
@@ -422,14 +423,14 @@ static int relocate_sections(Elf32Header* eh, void** addresses)
         {
             if (!relocate_section(eh, sh, addresses))
             {
-                printf("Failed to relocate section %s\n",
-                       get_section_name(eh, sh));
+                DBG_PRINTF("Failed to relocate section %s\n",
+                           get_section_name(eh, sh));
                 return 0;
             }
         }
         else if (sh->sh_type == SHT_REL)
         {
-            puts("SHT_REL not supported (yet?)");
+            DBG_PRINTF("SHT_REL not supported (yet?)\n");
             return 0;
         }
     }
@@ -466,7 +467,7 @@ static int update_global_symtab(Elf32Header* eh, ElfModule* em,
             // this section was loaded so add it to the symbol table
             const char* name = get_section_name(eh, sh);
             add_module_section(name, section_address, em);
-            printf("Added section %s: %p\n", name, section_address);
+            DBG_PRINTF("Added section %s: %p\n", name, section_address);
         }
 
         if (sh->sh_type == SHT_SYMTAB)
@@ -484,17 +485,17 @@ static int update_global_symtab(Elf32Header* eh, ElfModule* em,
 
                     if (!get_local_symbol_value(sym, addresses, &value))
                     {
-                        printf("Failed to find local symbol %s\n", name);
+                        DBG_PRINTF("Failed to find local symbol %s\n", name);
                         return 0;
                     }
 
                     if (!add_global_symbol(name, value, em))
                     {
-                        printf("Failed to add global symbol %s\n", name);
+                        DBG_PRINTF("Failed to add global symbol %s\n", name);
                         return 0;
                     }
 
-                    printf("Added global symbol %s: %p\n", name, value);
+                    DBG_PRINTF("Added global symbol %s: %p\n", name, value);
                 }
             }
         }
@@ -510,21 +511,21 @@ ElfModule* elf_load(void* file)
     // start with some sanity checks
     if (memcmp(eh->e_ident, magic, sizeof(magic)) != 0)
     {
-        puts("Wrong magic");
+        DBG_PRINTF("Wrong magic\n");
         return NULL;
     }
 
     // check if this is a relocatable file
     if (eh->e_type != 0x01)
     {
-        puts("Not relocatable");
+        DBG_PRINTF("Not relocatable\n");
         return NULL;
     }
 
     // check if this is a binary for the MSP430
     if (eh->e_machine != 0x69)
     {
-        puts("Wrong architecture");
+        DBG_PRINTF("Wrong architecture\n");
         return NULL;
     }
 
@@ -532,45 +533,45 @@ ElfModule* elf_load(void* file)
     // not match the documented one...
     if (eh->e_shentsize != sizeof(SectionHeader))
     {
-        puts("Weird section header size");
+        DBG_PRINTF("Weird section header size\n");
         return NULL;
     }
 
     // check if there are sections
     if (eh->e_shoff == 0)
     {
-        puts("No section headers");
+        DBG_PRINTF("No section headers\n");
         return NULL;
     }
 
     unsigned i;
     for (i = 0; i < eh->e_shnum; i++)
     {
-        SectionHeader* sh = get_section_header(eh, i);
-        printf("Section %u, name %s, type %lu\n",
-               i, get_section_name(eh, sh), sh->sh_type);
+        DBG_VAR(SectionHeader* sh = get_section_header(eh, i));
+        DBG_PRINTF("Section %u, name %s, type %lu\n",
+                   i, get_section_name(eh, sh), sh->sh_type);
     }
 
     ElfModule* em = malloc(sizeof(ElfModule));
     if (em == NULL)
     {
-        puts("Out of memory");
+        DBG_PRINTF("Out of memory\n");
         return NULL;
     }
 
-    puts("Loading sections...");
+    DBG_PRINTF("Loading sections...\n");
     void** addresses = load_sections(eh, em);
     if (addresses == NULL)
     {
-        puts("Loading sections failed");
+        DBG_PRINTF("Loading sections failed\n");
         free(em);
         return NULL;
     }
 
-    puts("Relocating sections...");
+    DBG_PRINTF("Relocating sections...\n");
     if (!relocate_sections(eh, addresses))
     {
-        puts("Relocating sections failed");
+        DBG_PRINTF("Relocating sections failed\n");
         elf_unload(em);
         free(addresses);
         return NULL;

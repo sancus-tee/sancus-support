@@ -1,6 +1,7 @@
 #include "link.h"
 
 #include "cobs.h"
+#include "private/debug.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -23,12 +24,6 @@ static size_t buffer_pos = 0;
 int link_init(PhyApi* phy_api)
 {
     phy = *phy_api;
-
-    puts("Link layer initialized using the following PHY API:");
-    printf(" - available(): %p\n", phy.available);
-    printf(" - read():      %p\n", phy.read);
-    printf(" - write():     %p\n", phy.write);
-
     return 1;
 }
 
@@ -58,7 +53,7 @@ static int start_new_frame(void)
 
     if (buffer == NULL)
     {
-        puts("link OOM: start_new_frame");
+        DBG_PRINTF("link OOM: start_new_frame\n");
         buffer_len = 0;
         return 0;
     }
@@ -76,7 +71,7 @@ static int realloc_buffer(void)
 
     if (new_buf == NULL)
     {
-        printf("link OOM: realloc_buffer(%u); discarding frame\n", new_len);
+        DBG_PRINTF("link OOM: realloc_buffer(%u); discarding frame\n", new_len);
         free(buffer);
         buffer_len = 0;
         buffer_pos = 0;
@@ -189,19 +184,19 @@ static int finish_frame(void)
 
     if (!cobs_decode(buffer, buffer_pos, frame->data, &frame->len))
     {
-        puts("Dropping malformed frame");
+        DBG_PRINTF("Dropping malformed frame\n");
         goto error;
     }
 
     if (frame->len == 0)
     {
-        puts("Dropping zero-length frame");
+        DBG_PRINTF("Dropping zero-length frame\n");
         goto error;
     }
 
     if (!enqueue_frame(frame))
     {
-        puts("Dropping frame due to memory pressure");
+        DBG_PRINTF("Dropping frame due to memory pressure\n");
         goto error;
     }
 
@@ -261,7 +256,7 @@ int link_send_frame(Frame* frame)
 
     if (buf == NULL)
     {
-        puts("Out of memory, dropping outgoing frame");
+        DBG_PRINTF("Out of memory, dropping outgoing frame\n");
         return 0;
     }
 

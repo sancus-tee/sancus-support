@@ -1,6 +1,8 @@
 #include "ps2.h"
 #include "ps2_hardware.h"
 
+#include "private/debug.h"
+
 #include <stdio.h>
 
 static ps2_calback_t cb_press;
@@ -24,7 +26,7 @@ static void __attribute__((interrupt(PS2_RX_VECTOR))) ps2_receive(void)
     else
         cb_press(data);
 
-    const char* type = released ? "Released" : "Pressed";
-    printf("PS2: %s %02x (%04x)\n", type, data, stat);
+    DBG_VAR(const char* type = released ? "Released" : "Pressed");
+    DBG_PRINTF("PS2: %s %02x (%04x)\n", type, data, stat);
 }
 

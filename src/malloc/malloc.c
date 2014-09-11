@@ -8,11 +8,12 @@
 #include <stdio.h>
 #include <stdint.h>
 
+#include "private/debug.h"
+
 #ifndef STACK_SIZE
 #define STACK_SIZE 512
 #endif
 
-#define DEBUG_MEMMGR_SUPPORT_STATS 1
 #define MIN_POOL_ALLOC_QUANTAS 16
 #define CANARY_VALUE 0xbabe
 
@@ -78,7 +79,7 @@ static void check_canary()
 
 void memmgr_print_stats()
 {
-#ifdef DEBUG_MEMMGR_SUPPORT_STATS
+#ifndef NDEBUG
     mem_header_t* p;
 
     printf("------ Memory manager stats ------\n\n");
@@ -118,7 +119,7 @@ void memmgr_print_stats()
     }
 
     printf("\n");
-#endif // DEBUG_MEMMGR_SUPPORT_STATS
+#endif
 }
 
 
@@ -213,9 +214,7 @@ void* malloc(size_t nbytes)
         {
             if ((p = get_mem_from_pool(nquantas)) == 0)
             {
-                #ifdef DEBUG_MEMMGR_FATAL
-                printf("!! Memory allocation failed !!\n");
-                #endif
+                DBG_PRINTF("!! Memory allocation failed !!\n");
                 return 0;
             }
         }
