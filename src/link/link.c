@@ -131,13 +131,17 @@ static Frame* new_frame(size_t len)
     Frame* frame = malloc(sizeof(Frame));
 
     if (frame == NULL)
+    {
+        DBG_PRINTF("link OOM: failed to allocate frame structure\n");
         return NULL;
+    }
 
     frame->len = len;
     frame->data = malloc(len);
 
     if (frame->data == NULL)
     {
+        DBG_PRINTF("link OOM: failed to allocate buffer for frame data\n");
         free(frame);
         return NULL;
     }
@@ -155,7 +159,10 @@ static int enqueue_frame(Frame* frame)
     FrameList* new_element = malloc(sizeof(FrameList));
 
     if (new_element == NULL)
+    {
+        DBG_PRINTF("link OOM: failed to allocate frame list entry\n");
         return 0;
+    }
 
     new_element->frame = frame;
     new_element->next = NULL;
