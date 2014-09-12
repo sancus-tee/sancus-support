@@ -63,6 +63,25 @@ static byte* pool = (byte*)&__bss_end;
 static ulong pool_free_pos = 0;
 static Canary* canary;
 
+#ifdef TRACE_MALLOC
+static volatile int do_trace = 1;
+
+#define START_TRACING() do {do_trace = 1;} while(0)
+#define STOP_TRACING()  do {do_trace = 0;} while(0)
+
+typedef struct
+{
+    void*  location;
+    size_t size;
+    void*  owner;
+} Allocation;
+
+static Allocation allocations[TRACE_MALLOC_NUM_ALLOCS] = {{0, 0, 0},};
+#else
+#define START_TRACING()
+#define STOP_TRACING()
+#endif
+
 void free(void* ap);
 
 void __attribute__((constructor)) memmgr_init()
@@ -79,7 +98,7 @@ static void check_canary()
 
 void memmgr_print_stats()
 {
-#ifndef NDEBUG
+#ifdef TRACE_MALLOC
     mem_header_t* p;
 
     printf("------ Memory manager stats ------\n\n");
@@ -122,6 +141,80 @@ void memmgr_print_stats()
 #endif
 }
 
+void memmgr_print_allocations()
+{
+#ifdef TRACE_MALLOC
+    printf("------ Current allocations ------\n");
+
+    for (size_t i = 0; i < sizeof(allocations) / sizeof(Allocation); i++)
+    {
+        Allocation* allocation = &allocations[i];
+
+        if (allocation->location != NULL)
+        {
+            printf("Pointer: %p, size: %u, owner: %p\n",
+                   allocation->location, allocation->size, allocation->owner);
+        }
+    }
+
+    printf("---------------------------------\n");
+#endif
+}
+
+#ifdef TRACE_MALLOC
+static void add_allocation(void* location, size_t size, void* caller)
+{
+    if (!do_trace)
+        return;
+
+    printf("%p: malloc(%u) -> %p\n", caller, size, location);
+
+    for (size_t i = 0; i < sizeof(allocations) / sizeof(Allocation); i++)
+    {
+        Allocation* allocation = &allocations[i];
+
+        if (allocation->location == NULL)
+        {
+            allocation->location = location;
+            allocation->size = size;
+            allocation->owner = caller;
+            return;
+        }
+    }
+
+    puts("TRACE_MALLOC: max number of traced allocations reached");
+}
+
+static void remove_allocation(void* location, void* caller)
+{
+    if (!do_trace)
+        return;
+
+    printf("%p: free(%p)\n", caller, location);
+
+    for (size_t i = 0; i < sizeof(allocations) / sizeof(Allocation); i++)
+    {
+        Allocation* allocation = &allocations[i];
+
+        if (allocation->location == location)
+        {
+            allocation->location = NULL;
+            allocation->size = 0;
+            allocation->owner = NULL;
+            return;
+        }
+    }
+
+    printf("TRACE_MALLOC: no allocation found at %p, illegal free?\n",
+           location);
+}
+
+static inline void* __attribute__((always_inline)) get_caller()
+{
+    void* return_addr = __builtin_return_address(0);
+    return (char*)return_addr - 4;
+}
+#endif
 
 static mem_header_t* get_mem_from_pool(ulong nquantas)
 {
@@ -138,7 +231,9 @@ static mem_header_t* get_mem_from_pool(ulong nquantas)
     {
         h = (mem_header_t*) (pool + pool_free_pos);
         h->s.size = nquantas;
+        STOP_TRACING();
         free((void*) (h + 1));
+        START_TRACING();
         pool_free_pos += total_req_size;
     }
     else
@@ -201,7 +296,13 @@ void* malloc(size_t nbytes)
             }
 
             freep = prevp;
-            return (void*) (p + 1);
+            void* ret = p + 1;
+
+#ifdef TRACE_MALLOC
+            add_allocation(ret, nbytes, get_caller());
+#endif
+
+            return ret;
         }
         // Reached end of free list ?
         // Try to allocate the block from the pool. If that succeeds,
@@ -214,7 +315,9 @@ void* malloc(size_t nbytes)
         {
             if ((p = get_mem_from_pool(nquantas)) == 0)
             {
-                DBG_PRINTF("!! Memory allocation failed !!\n");
+                DBG_PRINTF("!! Memory allocation of %uB failed !!\n", nbytes);
+                memmgr_print_stats();
+                memmgr_print_allocations();
                 return 0;
             }
         }
@@ -229,6 +332,10 @@ void* malloc(size_t nbytes)
 //
 void free(void* ap)
 {
+#ifdef TRACE_MALLOC
+    remove_allocation(ap, get_caller());
+#endif
+
     check_canary();
 
     mem_header_t* block;
