@@ -156,42 +156,48 @@ typedef struct
 } CallInfo;
 
 // if this function is inlined, GCC messes with the stack pointer
-static void __attribute__((noinline, optimize("-O1"))) enter_sm(CallInfo* ci)
+// if this function is not optimized, the register allocator fails
+static uint16_t __attribute__((noinline, optimize("-O1")))
+enter_sm(CallInfo* ci)
 {
     uint16_t args_left = ci->nargs;
+    uint16_t ret;
 
-    asm("tst  %0\n\t"
+    asm("tst  %1\n\t"
         "jz   1f\n\t"
-        "mov  %1, r15\n\t"
-        "dec  %0\n\t"
+        "mov  %2, r15\n\t"
+        "dec  %1\n\t"
         "jz   1f\n\t"
-        "mov  %2, r14\n\t"
-        "dec  %0\n\t"
+        "mov  %3, r14\n\t"
+        "dec  %1\n\t"
         "jz   1f\n\t"
-        "mov  %3, r13\n\t"
-        "dec  %0\n\t"
+        "mov  %4, r13\n\t"
+        "dec  %1\n\t"
         "jz   1f\n\t"
-        "mov  %4, r12\n\t"
-        "dec  %0\n\t"
+        "mov  %5, r12\n\t"
+        "dec  %1\n\t"
 
         "1:\n\t"
         "push r2\n\t"
         "mov  r1, &__unprotected_sp\n\t"
-        "mov  %5, r6\n\t"
+        "mov  %6, r6\n\t"
         "mov  #1f, r7\n\t"
         "dint\n\t"
-        "br   %6\n\t"
+        "br   %7\n\t"
         "1:\n\t"
         "mov  &__unprotected_sp, r1\n\t"
         "pop r2\n\t"
-        :
+        "mov r15, %0\n\t"
+        : "=m"(ret)
         : "r"(args_left), "m"(ci->arg1), "m"(ci->arg2), "m"(ci->arg3),
           "m"(ci->arg4), "m"(ci->index), "m"(ci->entry)
         : "r6", "r7", "r12", "r13", "r14", "r15");
+
+    return ret;
 }
 
 int sm_call_module(struct SancusModule* sm, uint16_t index,
-                   uint16_t* args, size_t nargs)
+                   uint16_t* args, size_t nargs, uint16_t* retval)
 {
     CallInfo ci;
     ci.entry = sm->public_start;
@@ -218,11 +224,16 @@ int sm_call_module(struct SancusModule* sm, uint16_t index,
     DBG_PRINTF("Accepted call to SM %s, index %u, args %u\n",
                sm->name, index, nargs);
 
-    enter_sm(&ci);
+    uint16_t ret = enter_sm(&ci);
+
+    if (retval != NULL)
+        *retval = ret;
+
     return 1;
 }
 
-int sm_call_id(sm_id id, uint16_t index, uint16_t* args, size_t nargs)
+int sm_call_id(sm_id id, uint16_t index, uint16_t* args, size_t nargs,
+               uint16_t* retval)
 {
     struct SancusModule* sm = sm_get_by_id(id);
 
@@ -232,7 +243,7 @@ int sm_call_id(sm_id id, uint16_t index, uint16_t* args, size_t nargs)
         return 0;
     }
 
-    return sm_call_module(sm, index, args, nargs);
+    return sm_call_module(sm, index, args, nargs, retval);
 }
 
 struct SancusModule* sm_get_by_id(sm_id id)
