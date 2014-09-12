@@ -5,6 +5,12 @@ include_directories ("${PROJECT_SOURCE_DIR}/include/sancus_support")
 add_definitions("-D__MSP430F149__")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -Wall")
 
+option(DEBUG_PRINTS "Enable debug prints")
+
+if (DEBUG_PRINTS)
+    add_definitions("-DDEBUG_PRINTS")
+endif ()
+
 add_subdirectory(dev)
 add_subdirectory(link)
 add_subdirectory(packet)
