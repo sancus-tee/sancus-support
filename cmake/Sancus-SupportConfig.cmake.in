@@ -9,17 +9,18 @@ set(SANCUS_SUPPORT_TOOLS "${CMAKE_CURRENT_LIST_DIR}/@REL_TOOLS_DIR@")
 get_filename_component(SANCUS_SUPPORT_TOOLS ${SANCUS_SUPPORT_TOOLS} ABSOLUTE)
 set(SANCUS_SUPPORT_GENSYMTAB "${SANCUS_SUPPORT_TOOLS}/generate-symtab.py")
 
-set(SANCUS_SUPPORT_DEV_TIMER_LIB sancus_support_dev-timer)
-set(SANCUS_SUPPORT_DEV_UART_LIB  sancus_support_dev-uart)
-set(SANCUS_SUPPORT_DEV_PS2_LIB   sancus_support_dev-ps2)
-set(SANCUS_SUPPORT_DEV_LIB       sancus_support_dev)
-set(SANCUS_SUPPORT_LINK_LIB      sancus_support_link)
-set(SANCUS_SUPPORT_PACKET_LIB    sancus_support_packet)
-set(SANCUS_SUPPORT_EVENTLOOP_LIB sancus_support_event-loop)
-set(SANCUS_SUPPORT_LOADER_LIB    sancus_support_loader)
-set(SANCUS_SUPPORT_SMCONTROL_LIB sancus_support_sm-control)
-set(SANCUS_SUPPORT_MALLOC_LIB    sancus_support_malloc)
-set(SANCUS_SUPPORT_TOOLS_LIB     sancus_support_tools)
+set(SANCUS_SUPPORT_DEV_TIMER_LIB   sancus_support_dev-timer)
+set(SANCUS_SUPPORT_DEV_UART_LIB    sancus_support_dev-uart)
+set(SANCUS_SUPPORT_DEV_PS2_LIB     sancus_support_dev-ps2)
+set(SANCUS_SUPPORT_DEV_PMODCLS_LIB sancus_support_dev-pmodcls)
+set(SANCUS_SUPPORT_DEV_LIB         sancus_support_dev)
+set(SANCUS_SUPPORT_LINK_LIB        sancus_support_link)
+set(SANCUS_SUPPORT_PACKET_LIB      sancus_support_packet)
+set(SANCUS_SUPPORT_EVENTLOOP_LIB   sancus_support_event-loop)
+set(SANCUS_SUPPORT_LOADER_LIB      sancus_support_loader)
+set(SANCUS_SUPPORT_SMCONTROL_LIB   sancus_support_sm-control)
+set(SANCUS_SUPPORT_MALLOC_LIB      sancus_support_malloc)
+set(SANCUS_SUPPORT_TOOLS_LIB       sancus_support_tools)
 
 set(SANCUS_SUPPORT_LIBS ${SANCUS_SUPPORT_DEV_LIB}
                         ${SANCUS_SUPPORT_LINK_LIB}
@@ -37,7 +38,7 @@ mark_as_advanced(SANCUS_SUPPORT_INCLUDES SANCUS_SUPPORT_TOOLS
                  SANCUS_SUPPORT_LOADER_LIB SANCUS_SUPPORT_SMCONTROL_LIB
                  SANCUS_SUPPORT_TOOLS_LIB SANCUS_SUPPORT_LIBS
                  SANCUS_SUPPORT_LINK_LIB SANCUS_SUPPORT_PACKET_LIB
-                 SANCUS_SUPPORT_MALLOC_LIB)
+                 SANCUS_SUPPORT_MALLOC_LIB SANCUS_SUPPORT_DEV_PMODCLS_LIB)
 
 find_package_handle_standard_args(Sancus-Support DEFAULT_MSG
                                   SANCUS_SUPPORT_INCLUDES)
