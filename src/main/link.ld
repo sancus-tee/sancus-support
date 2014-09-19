@@ -8,8 +8,8 @@ MEMORY
   peripheral_8bit  : ORIGIN = 0x0010, LENGTH = 0x00f0
   peripheral_16bit : ORIGIN = 0x0100, LENGTH = 0x0100
 
-  ram (wx)         : ORIGIN = 0x0200, LENGTH = 0x2800
-  rom (rx)         : ORIGIN = 0x4000, LENGTH = 0xbfe0
+  ram (wx)         : ORIGIN = 0x0200, LENGTH = 0x4000
+  rom (rx)         : ORIGIN = 0x8000, LENGTH = 0x7fe0
 
   vectors          : ORIGIN = 0xffe0, LENGTH = 32
 
