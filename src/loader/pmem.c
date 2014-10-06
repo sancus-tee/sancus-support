@@ -9,7 +9,10 @@ static uintptr_t heap = (uintptr_t)&__data_end_rom;
 // TODO implement something that isn't completely ridiculous :-)
 void* pmem_malloc(size_t size)
 {
-    if (heap + size > HEAP_END)
+    uintptr_t new_heap = heap + size;
+
+    // the second test detect integer overflow
+    if (new_heap > HEAP_END || new_heap < size)
         return NULL;
 
     void* ret = (void*)heap;
