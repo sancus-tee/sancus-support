@@ -11,7 +11,7 @@ void* pmem_malloc(size_t size)
 {
     uintptr_t new_heap = heap + size;
 
-    // the second test detect integer overflow
+    // the second test detects integer overflow
     if (new_heap > HEAP_END || new_heap < size)
         return NULL;
 
