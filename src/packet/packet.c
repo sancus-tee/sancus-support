@@ -89,6 +89,51 @@ int packet_finish(void)
     return flush_buffer(/*finish=*/1);
 }
 
+// queue functions *************************************************************
+// we currently only support queueing a single packet
+Packet queue = {.len = 0, .data = NULL};
+
+int packet_queue(uint8_t* data, size_t len)
+{
+    if (queue.data != NULL)
+    {
+        DBG_PRINTF("Packet queue full, ignoring queue request\n");
+        return 0;
+    }
+
+    queue.data = malloc(len);
+
+    if (queue.data == NULL)
+    {
+        DBG_PRINTF("OOM, ignoring queue request\n");
+        return 0;
+    }
+
+    memcpy(queue.data, data, len);
+    queue.len = len;
+    return 1;
+}
+
+int packet_send_queued(void)
+{
+    if (queue.data == NULL)
+        return 1;
+
+    int result = packet_start() &&
+                 packet_write(queue.data, queue.len) &&
+                 packet_finish();
+
+    // if anything went wrong, we'll retry next time
+    if (result)
+    {
+        free(queue.data);
+        queue.data = NULL;
+        queue.len = 0;
+    }
+
+    return result;
+}
+
 // read functions **************************************************************
 // we currently only support single frame packets and packets are not buffered
 Packet* received_packet = NULL;

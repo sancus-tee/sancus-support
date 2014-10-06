@@ -23,6 +23,9 @@ int packet_start(void);
 int packet_write(uint8_t* data, size_t len);
 int packet_finish(void);
 
+int packet_queue(uint8_t* data, size_t len);
+int packet_send_queued(void);
+
 size_t packet_available(void);
 Packet* packet_get_next(void);
 void packet_free(Packet* packet);

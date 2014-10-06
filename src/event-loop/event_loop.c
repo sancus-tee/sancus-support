@@ -325,5 +325,6 @@ void event_loop_start(tick_callback tick)
             handle_command();
 
         tick();
+        packet_send_queued();
     }
 }
