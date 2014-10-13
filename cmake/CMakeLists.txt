@@ -15,8 +15,8 @@ file(RELATIVE_PATH REL_TOOLS_DIR
 configure_file(Sancus-SupportConfig.cmake.in Sancus-SupportConfig.cmake @ONLY)
 configure_file(GenerateSymtab.cmake GenerateSymtab.cmake COPYONLY)
 
-export(TARGETS dev dev-timer dev-uart dev-ps2 dev-pmodcls link packet event-loop
-               loader sm-control tools malloc
+export(TARGETS dev dev-timer dev-tsc dev-uart dev-ps2 dev-pmodcls link packet
+               event-loop loader sm-control tools malloc
        NAMESPACE sancus_support_
        FILE "${CMAKE_CURRENT_BINARY_DIR}/ExportTargets.cmake")
 

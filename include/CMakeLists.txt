@@ -7,6 +7,7 @@ set(HEADERS
     sancus_support/ps2_hardware.h
     sancus_support/sm_control.h
     sancus_support/timer.h
+    sancus_support/tsc.h
     sancus_support/tools.h
     sancus_support/uart.h
     sancus_support/link.h
