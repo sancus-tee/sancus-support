@@ -123,6 +123,11 @@ parser.add_argument('--add-std-lib',
                     type=_find_std_lib,
                     dest='additional_libs',
                     help='Add a standard library to the symbol table')
+parser.add_argument('--add-symbol',
+                    action='append',
+                    default=[],
+                    dest='additional_symbols',
+                    help='Add an entry for the given symbol')
 parser.add_argument('-v', '--verbose',
                     action='store_true',
                     help='Be verbose')
@@ -134,7 +139,7 @@ includes = ('sancus_support/private/symbol.h', 'errno.h', 'math.h', 'stdint.h',
 
 default_libs = _find_default_libs()
 inputs = args.inputs + args.additional_libs + default_libs
-symbols = _generate_symbol_names(inputs)
+symbols = list(_generate_symbol_names(inputs)) + args.additional_symbols
 included_libs = [_find_std_lib('libc')] + _find_default_libs()
 included_symbols = list(_generate_symbol_names(included_libs))
 ignores = ['sancus_enable', 'ffs', 'rindex', 'index']
