@@ -1,8 +1,11 @@
 #ifndef PS2_HARDWARE_H
 #define PS2_HARDWARE_H
 
+#include <stdint.h>
+
 #define PS2_STAT (*(volatile unsigned char*) 0x00a0)
 #define PS2_DATA (*(volatile unsigned char*) 0x00a1)
+#define PS2_ALL  (*(volatile uint16_t*)      0x00a0)
 
 #define PS2_READY    0x01
 #define PS2_BUSY     0x02
