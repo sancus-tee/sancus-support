@@ -8,7 +8,7 @@
 
 typedef uint64_t tsc_t;
 
-inline tsc_t tsc_read(void)
+static inline tsc_t tsc_read(void)
 {
     // any write to TSC_CTL takes as snapshot of the current value which can be
     // read from TSC_VAL later
