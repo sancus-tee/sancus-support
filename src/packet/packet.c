@@ -142,7 +142,13 @@ static void receive_packet(void)
 {
     DBG_VAR(static const char* oom_msg = "Dropping packet because of OOM");
 
-    if (received_packet != NULL || link.frames_available() == 0)
+    if (received_packet != NULL)
+    {
+        DBG_PRINTF("Dropping packet because buffer is full\n");
+        return;
+    }
+
+    if (link.frames_available() == 0)
         return;
 
     Frame* frame = link.get_next_frame();
