@@ -14,6 +14,7 @@ set(HEADERS
     sancus_support/packet.h
     sancus_support/spi.h
     sancus_support/pmodcls.h
+    sancus_support/pmodkypd.h
 )
 
 set(BASE_INSTALL_DIR "${INSTALL_INCLUDES_DIR}/sancus_support")
