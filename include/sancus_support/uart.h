@@ -3,7 +3,10 @@
 
 #include <stddef.h>
 
+typedef void (*uart_receive_cb)(unsigned char);
+
 void uart_init(void);
+void uart_set_receive_cb(uart_receive_cb cb);
 size_t uart_available(void);
 void uart_write_byte(unsigned char b);
 void uart_write(const unsigned char* buf, size_t size);

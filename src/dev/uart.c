@@ -7,6 +7,9 @@
 
 #define RX_BUFFER_SIZE 128
 
+// callback that is called for every byte received.
+uart_receive_cb receive_cb;
+
 // one element is wasted in the buffer to be able to make a distinction between
 // a full and an empty buffer.
 static volatile uint8_t rx_buffer[RX_BUFFER_SIZE];
@@ -18,13 +21,21 @@ static volatile size_t rx_head;
 // rx_head, in which case the buffer is empty
 static volatile size_t rx_tail;
 
+static void uart_append_byte(unsigned char);
+
 void uart_init(void )
 {
+    receive_cb = uart_append_byte;
     rx_head = rx_tail = 0;
     UART_BAUD = BAUD;
     UART_CTL = UART_EN | UART_IEN_RX;
     UART2_BAUD = BAUD;
     UART2_CTL = UART_EN;
+}
+
+void uart_set_receive_cb(uart_receive_cb cb)
+{
+    receive_cb = cb;
 }
 
 size_t uart_available(void)
@@ -80,17 +91,22 @@ static void __attribute__((interrupt(UART_RX_VECTOR))) uart_receive(void)
     // Read the received data
     uint8_t byte = UART_RXD;
 
+    receive_cb(byte);
+
+    // Clear the receive pending flag
+    UART_STAT = UART_RX_PND;
+}
+
+static void uart_append_byte(unsigned char b)
+{
     size_t i = rx_head;
     size_t next_head = (i + 1) % RX_BUFFER_SIZE;
 
     if (next_head != rx_tail) // drop byte if buffer is full
     {
-        rx_buffer[i] = byte;
+        rx_buffer[i] = b;
         rx_head = next_head;
     }
-
-    // Clear the receive pending flag
-    UART_STAT = UART_RX_PND;
 }
 
 void uart2_write_byte(unsigned char b)
