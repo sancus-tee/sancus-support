@@ -17,10 +17,6 @@
 #define MIN_POOL_ALLOC_QUANTAS 16
 #define CANARY_VALUE 0xbabe
 
-typedef unsigned char byte;
-typedef unsigned long ulong;
-
-typedef ulong Align;
 typedef uint16_t Canary;
 
 union mem_header_union
@@ -33,12 +29,12 @@ union mem_header_union
 
         // Size of the block (in quantas of sizeof(mem_header_t))
         //
-        ulong size; 
+        size_t size;
     } s;
 
     // Used to align headers in memory to a boundary
     //
-    Align align_dummy;
+    size_t align_dummy;
 };
 
 typedef union mem_header_union mem_header_t;
@@ -59,8 +55,8 @@ extern char __stack;
 #define POOL_SIZE ((uintptr_t)&__stack - STACK_SIZE - (uintptr_t)&__bss_end - \
                    sizeof(Canary))
 
-static byte* pool = (byte*)&__bss_end;
-static ulong pool_free_pos = 0;
+static uint8_t* pool = (uint8_t*)&__bss_end;
+static size_t pool_free_pos = 0;
 static Canary* canary;
 
 #ifdef TRACE_MALLOC
@@ -102,14 +98,14 @@ void memmgr_print_stats()
     mem_header_t* p;
 
     printf("------ Memory manager stats ------\n\n");
-    printf(    "Pool: free_pos = %lu (%lu bytes left)\n\n", 
+    printf(    "Pool: free_pos = %u (%u bytes left)\n\n",
             pool_free_pos, POOL_SIZE - pool_free_pos);
 
     p = (mem_header_t*) pool;
 
     while (p < (mem_header_t*) (pool + pool_free_pos))
     {
-        printf(    "  * Addr: %p; Size: %8lu\n",
+        printf(    "  * Addr: %p; Size: %8u\n",
                 p, p->s.size);
 
         p += p->s.size;
@@ -123,7 +119,7 @@ void memmgr_print_stats()
 
         while (1)
         {
-            printf(    "  * Addr: %p; Size: %8lu; Next: %p\n",
+            printf(    "  * Addr: %p; Size: %8u; Next: %p\n",
                     p, p->s.size, p->s.next);
 
             p = p->s.next;
@@ -216,9 +212,9 @@ static inline void* __attribute__((always_inline)) get_caller()
 }
 #endif
 
-static mem_header_t* get_mem_from_pool(ulong nquantas)
+static mem_header_t* get_mem_from_pool(size_t nquantas)
 {
-    ulong total_req_size;
+    size_t total_req_size;
 
     mem_header_t* h;
 
@@ -264,7 +260,7 @@ void* malloc(size_t nbytes)
     // the requested bytes, plus the header. The -1 and +1 are there to make sure
     // that if nbytes is a multiple of nquantas, we don't allocate too much
     //
-    ulong nquantas = (nbytes + sizeof(mem_header_t) - 1) / sizeof(mem_header_t) + 1;
+    size_t nquantas = (nbytes + sizeof(mem_header_t) - 1) / sizeof(mem_header_t) + 1;
 
     // First alloc call, and no free list yet ? Use 'base' for an initial
     // denegerate block of size 0, which points to itself
