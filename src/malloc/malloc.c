@@ -188,6 +188,9 @@ static void remove_allocation(void* location, void* caller)
 
     printf("%p: free(%p)\n", caller, location);
 
+    if (location == NULL)
+        return;
+
     for (size_t i = 0; i < sizeof(allocations) / sizeof(Allocation); i++)
     {
         Allocation* allocation = &allocations[i];
@@ -333,6 +336,9 @@ void free(void* ap)
 #endif
 
     check_canary();
+
+    if (ap == NULL)
+        return;
 
     mem_header_t* block;
     mem_header_t* p;
