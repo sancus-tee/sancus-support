@@ -160,39 +160,7 @@ static void load_data(ParseState* state)
 
 static void print_sm_ld_info(ParseState* state)
 {
-    static const char* error_prefix = "Error handling SmLdInfo packet";
-
-    sm_id id;
-
-    if (!parse_int(state, &id))
-    {
-        printf("%s: Failed to read ID\n", error_prefix);
-        return;
-    }
-
-    if (!cb_printf_init(packet_write))
-    {
-        printf("%s: Out of memory 1\n", error_prefix);
-        return;
-    }
-
-    if (id == 0)
-        print_global_symbols(cb_printf);
-    else
-    {
-        ElfModule* module = sm_get_elf_by_id(id);
-
-        if (module == NULL)
-            printf("%s: No module with ID 0x%x\n", error_prefix, id);
-        else
-        {
-            print_global_symbols(cb_printf);
-            print_module_sections(module, cb_printf);
-        }
-    }
-
-    cb_printf_finish();
-    return;
+    // TODO implement with new symtab API.
 }
 
 static void print_uart_data(ParseState* state)
