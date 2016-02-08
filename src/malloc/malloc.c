@@ -92,9 +92,27 @@ static void check_canary()
         puts("WARNING: stack overflow detected");
 }
 
+static int is_free(mem_header_t* p)
+{
+    if (freep == NULL)
+        return 0;
+
+    mem_header_t* current = freep;
+
+    do
+    {
+        if (p == current)
+            return 1;
+
+        current = current->s.next;
+    }
+    while (current != freep);
+
+    return 0;
+}
+
 void memmgr_print_stats()
 {
-#ifdef TRACE_MALLOC
     mem_header_t* p;
 
     printf("------ Memory manager stats ------\n\n");
@@ -105,8 +123,13 @@ void memmgr_print_stats()
 
     while (p < (mem_header_t*) (pool + pool_free_pos))
     {
-        printf(    "  * Addr: %p; Size: %8u\n",
+        printf(    "  * Addr: %p; Size: %8u",
                 p, p->s.size);
+
+        if (is_free(p))
+            printf(" (free)");
+
+        printf("\n");
 
         p += p->s.size;
     }
@@ -134,7 +157,6 @@ void memmgr_print_stats()
     }
 
     printf("\n");
-#endif
 }
 
 void memmgr_print_allocations()
@@ -207,13 +229,13 @@ static void remove_allocation(void* location, void* caller)
     printf("TRACE_MALLOC: no allocation found at %p, illegal free?\n",
            location);
 }
+#endif
 
 static inline void* __attribute__((always_inline)) get_caller()
 {
     void* return_addr = __builtin_return_address(0);
     return (char*)return_addr - 4;
 }
-#endif
 
 static mem_header_t* get_mem_from_pool(size_t nquantas)
 {
@@ -242,7 +264,6 @@ static mem_header_t* get_mem_from_pool(size_t nquantas)
 
     return freep;
 }
-
 
 // Allocations are done in 'quantas' of header size.
 // The search for a free block of adequate size begins at the point 'freep' 
@@ -314,7 +335,8 @@ void* malloc(size_t nbytes)
         {
             if ((p = get_mem_from_pool(nquantas)) == 0)
             {
-                printf("!! Memory allocation of %uB failed !!\n", nbytes);
+                printf("!! malloc(%u) from %p failed !!\n",
+                       nbytes, get_caller());
                 memmgr_print_stats();
                 memmgr_print_allocations();
                 return 0;
