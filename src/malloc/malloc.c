@@ -92,6 +92,7 @@ static void check_canary()
         puts("WARNING: stack overflow detected");
 }
 
+#ifdef TRACE_MALLOC
 static int is_free(mem_header_t* p)
 {
     if (freep == NULL)
@@ -110,9 +111,11 @@ static int is_free(mem_header_t* p)
 
     return 0;
 }
+#endif
 
 void memmgr_print_stats()
 {
+#ifdef TRACE_MALLOC
     mem_header_t* p;
 
     printf("------ Memory manager stats ------\n\n");
@@ -157,6 +160,7 @@ void memmgr_print_stats()
     }
 
     printf("\n");
+#endif
 }
 
 void memmgr_print_allocations()
