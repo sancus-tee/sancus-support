@@ -314,7 +314,7 @@ void* malloc(size_t nbytes)
         {
             if ((p = get_mem_from_pool(nquantas)) == 0)
             {
-                DBG_PRINTF("!! Memory allocation of %uB failed !!\n", nbytes);
+                printf("!! Memory allocation of %uB failed !!\n", nbytes);
                 memmgr_print_stats();
                 memmgr_print_allocations();
                 return 0;
