@@ -72,6 +72,13 @@ static struct SancusModule* register_sm(const char* name, uint16_t vendor_id,
                                         ElfModule* em)
 {
     SmList* sm_list = malloc(sizeof(SmList));
+
+    if (sm_list == NULL)
+    {
+        DBG_PRINTF("OOM");
+        return NULL;
+    }
+
     sm_list->em = em;
 
     struct SancusModule* sm = &sm_list->sm;
@@ -114,6 +121,13 @@ static struct SancusModule* register_sm(const char* name, uint16_t vendor_id,
 int sm_register_existing(struct SancusModule* sm)
 {
     SmList* sm_list = malloc(sizeof(SmList));
+
+    if (sm_list == NULL)
+    {
+        DBG_PRINTF("OOM");
+        return 0;
+    }
+
     sm_list->sm = *sm;
     sm_list->em = NULL;
     append_sm_list(sm_list);
