@@ -26,6 +26,12 @@ static void lcd_uart_write_byte(uint8_t byte)
     __delay_cycles(20000);
 }
 
+int pmodcls_putchar(int c)
+{
+    lcd_uart_write_byte(c);
+    return c;
+}
+
 static void lcd_uart_write(const char* str)
 {
     while (*str != '\0')
