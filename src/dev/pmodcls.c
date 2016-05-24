@@ -41,6 +41,7 @@ static void lcd_uart_write(const char* str)
 
 static void pmodcls_write_command(const char* cmd_str)
 {
+    // https://reference.digilentinc.com/pmod/pmod/cls/user_guide
     static const char* cmd_prefix = "\x1b[";
     lcd_uart_write(cmd_prefix);
     lcd_uart_write(cmd_str);
