@@ -3,6 +3,7 @@
 #include "uart_hardware.h"
 
 #include <stdint.h>
+#include <stdio.h>
 
 #define LCD_UART_BAUDRATE 2083 // 9600 baud
 
@@ -65,5 +66,15 @@ void pmodcls_clear(void)
 void pmodcls_set_wrap_mode(PmodClsWrapMode mode)
 {
     char cmd[] = {mode == PmodClsWrapAt16 ? '0' : '1', 'h', '\0'};
+    pmodcls_write_command(cmd);
+}
+
+void pmodcls_set_cursor_position(pmodcls_pos_t row, pmodcls_pos_t col)
+{
+    if (row > 1 || col > 39)
+        return;
+
+    char cmd[6];
+    sprintf(cmd, "%d;%dH", row, col);
     pmodcls_write_command(cmd);
 }
