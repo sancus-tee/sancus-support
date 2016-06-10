@@ -24,3 +24,17 @@ add_subdirectory(tools)
 install(EXPORT ExportTargets
         NAMESPACE sancus_support_
         DESTINATION ${INSTALL_CMAKE_DIR})
+
+set(CPACK_GENERATOR "DEB")
+
+set(CPACK_PACKAGE_NAME "sancus-support")
+set(CPACK_PACKAGE_VERSION "1.0")
+set(CPACK_PACKAGE_CONTACT "Job Noorman <Job.Noorman@cs.kuleuven.be>")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Sancus support tools")
+
+#set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "all")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "python3, gcc-msp430, llvm-sancus")
+set(CPACK_DEBIAN_PACKAGE_HOMEPAGE
+        "https://distrinet.cs.kuleuven.be/software/sancus/")
+
+include(CPack)
