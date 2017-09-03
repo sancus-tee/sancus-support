@@ -12,6 +12,7 @@ set(HEADERS
     sancus_support/uart.h
     sancus_support/link.h
     sancus_support/packet.h
+    sancus_support/sm_io.h
     sancus_support/spi.h
     sancus_support/pmodcls.h
     sancus_support/pmodkypd.h
