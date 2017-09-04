@@ -27,7 +27,7 @@
   } while(0)
 
 void msp430_io_init(void);
-void sancus_enable_info(struct SancusModule *sm);
+void pr_sm_info(struct SancusModule *sm);
 int __attribute__((noinline)) putchar(int c);
 
 #define __always_inline static inline __attribute__((always_inline))
