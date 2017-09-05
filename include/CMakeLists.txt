@@ -10,6 +10,7 @@ set(HEADERS
     sancus_support/tsc.h
     sancus_support/tools.h
     sancus_support/uart.h
+    sancus_support/led_digits.h
     sancus_support/link.h
     sancus_support/packet.h
     sancus_support/sm_io.h
