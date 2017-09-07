@@ -16,8 +16,8 @@ typedef enum
 } SpiCpha;
 
 void spi_init(SpiCpol cpol, SpiCpha cpha, unsigned int clk_div);
-void spi_select(void);
-void spi_deselect(void);
+void spi_select(int dev);
+#define spi_deselect() spi_select(0x0)
 
 uint8_t spi_write_read_byte(uint8_t data);
 void spi_write_byte(uint8_t data);
