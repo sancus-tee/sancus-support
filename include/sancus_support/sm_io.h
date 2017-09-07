@@ -2,6 +2,7 @@
 #define SANCUS_SUPPORT_SM_IO_H_INC
 
 #include <sancus/sm_support.h>
+#include <stdint.h>
 
 #define INFO_STR(str)               "[" __FILE__ "] " str
 #define pr_info(str)                puts(INFO_STR(str))
@@ -39,7 +40,7 @@ int __attribute__((noinline)) putchar(int c);
     void __attribute__((noinline)) printf2(const char* fmt, int arg1, int arg2);
     void __attribute__((noinline)) printf3(const char* fmt, int arg1, int arg2, int arg3);
 
-    __always_inline void dump_buf(const char *buf, int size, char *name)
+    __always_inline void dump_buf(const uint8_t *buf, int size, char *name)
     {
         int i;
         printf2("%s (%d bits) is: ", (int) name, size*8);
