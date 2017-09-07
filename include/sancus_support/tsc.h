@@ -19,12 +19,16 @@ static inline __attribute__((always_inline)) tsc_t tsc_read(void)
     return TSC_VAL;
 }
 
-#define DECLARE_TSC_TIMER(name)                                     \
-    struct {tsc_t start, end;} name;                                \
-    static void __attribute__((noinline)) name##_print_interval()   \
-    {                                                               \
-        printf(#name ": %llu\n", name.end - name.start - 28);       \
-    }
+#define DECLARE_TSC_TIMER(name)                                               \
+    struct {tsc_t start, end;} name;                                          \
+    static unsigned long long __attribute__((noinline)) name##_get_interval() \
+    {                                                                         \
+        return (name.end - name.start - 28);                                  \
+    }                                                                         \
+    static void __attribute__((noinline)) name##_print_interval()             \
+    {                                                                         \
+        printf(#name ": %llu\n", name##_get_interval());                      \
+    }                                                                         \
 
 #define TSC_TIMER_START(name)                               \
     do {                                                    \
@@ -44,7 +48,6 @@ static inline __attribute__((always_inline)) tsc_t tsc_read(void)
                      "mov.w %1+4, &" #name "+12\n\t"        \
                      "mov.w %1+6, &" #name "+14\n\t"        \
                      :: "m"(TSC_CTL), "m"(TSC_VAL):);       \
-        name##_print_interval();                            \
     } while (0)
 
 #endif
