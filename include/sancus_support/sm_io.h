@@ -1,5 +1,5 @@
-#ifndef SM_IO_H_INC
-#define SM_IO_H_INC
+#ifndef SANCUS_SUPPORT_SM_IO_H_INC
+#define SANCUS_SUPPORT_SM_IO_H_INC
 
 #include <sancus/sm_support.h>
 
