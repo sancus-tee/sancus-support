@@ -2,10 +2,11 @@
 #define SANCUS_SUPPORT_SM_IO_H_INC
 
 #include <sancus/sm_support.h>
+#include <stdio.h>
 #include <stdint.h>
 
 #define INFO_STR(str)               "[" __FILE__ "] " str
-#define pr_info(str)                puts(INFO_STR(str))
+#define pr_info(str)                printf0(INFO_STR(str) "\n")
 #define pr_info1(str, a1)           printf1(INFO_STR(str), a1)
 #define pr_info2(str, a1, a2)       printf2(INFO_STR(str), a1, a2)
 #define pr_info3(str, a1, a2, a3)   printf3(INFO_STR(str), a1, a2, a3)
@@ -21,8 +22,7 @@
   do {                                              \
     if (!(cond))                                    \
     {                                               \
-        /* pr_info1 to work around an LLVM bug */   \
-        pr_info1("assertion failed: " #cond, 0);    \
+        puts("assertion failed: " #cond);           \
         EXIT();                                     \
     }                                               \
   } while(0)
@@ -49,7 +49,6 @@ int __attribute__((noinline)) putchar(int c);
         puts(" ");
     }
 #else
-    #define puts(s)
     #define printf0(s)
     #define printf1(s, arg1)
     #define printf2(s, arg1, arg2)
