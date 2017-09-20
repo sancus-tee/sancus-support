@@ -18,14 +18,19 @@
     while(1);                                       \
   } while(0)
 
-#define ASSERT(cond)                                \
-  do {                                              \
-    if (!(cond))                                    \
-    {                                               \
-        puts("assertion failed: " #cond);           \
-        EXIT();                                     \
-    }                                               \
-  } while(0)
+#ifndef __SANCUS_IO_BENCH
+    #define BUG_ON(cond)                            \
+      do {                                          \
+        if ((cond))                                 \
+        {                                           \
+            puts("assertion failed: " #cond);       \
+            EXIT();                                 \
+        }                                           \
+      } while(0)
+#else
+    #define BUG_ON(cond)
+#endif
+#define ASSERT(cond) BUG_ON(!(cond))
 
 void msp430_io_init(void);
 void pr_sm_info(struct SancusModule *sm);
@@ -33,7 +38,7 @@ int __attribute__((noinline)) putchar(int c);
 
 #define __always_inline static inline __attribute__((always_inline))
 
-#ifndef __SANCUS_IO_QUIET
+#if !(defined(__SANCUS_IO_QUIET) || defined(__SANCUS_IO_BENCH))
     #include <stdio.h>
     void __attribute__((noinline)) printf0(const char* str);
     void __attribute__((noinline)) printf1(const char* fmt, int arg1);
