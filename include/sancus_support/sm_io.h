@@ -47,11 +47,16 @@ int __attribute__((noinline)) putchar(int c);
 
     __always_inline void dump_buf(const uint8_t *buf, int size, char *name)
     {
+        // NOTE: use putchar instead of printf to save simulation time
+        static const char hex[] = "0123456789abcdef";
         int i;
         printf2("%s (%d bits) is: ", (int) name, size*8);
         for (i = 0; i < size; i++)
-            printf1("%02x", (int) buf[i] & 0xff);
-        puts(" ");
+        {
+            putchar(hex[(buf[i]>>4) & 0xf]);
+            putchar(hex[(buf[i])    & 0xf]);
+        }
+        putchar('\n');
     }
 #else
     #define printf0(s)
