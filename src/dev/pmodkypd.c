@@ -18,7 +18,7 @@ static key_state_t read_key_state(void)
     for (int i = 0; i < 4; i++)
     {
         // pull the column pin low
-        P2OUT = ~(1 << i);
+        P1OUT = ~(1 << i);
 
         // if we don't wait a couple of cycles, we sometimes seem to read old
         // values from the row pins
@@ -26,7 +26,7 @@ static key_state_t read_key_state(void)
 
         // read the state of the current column (the row pins) and shift it
         // into the state
-        uint8_t col = P2IN >> 4;
+        uint8_t col = P1IN >> 4;
         state |= (col << (4 * i));
     }
 
@@ -57,10 +57,10 @@ void pmodkypd_init(key_event_cb press, key_event_cb release)
     press_cb = press;
     release_cb = release;
 
-    P2SEL = 0x00;
+    P1SEL = 0x00;
 
-    // the column pins are mapped to P2OUT[0:3] and the row pins to P2IN[4:7]
-    P2DIR = 0x0f;
+    // the column pins are mapped to P1OUT[0:3] and the row pins to P1IN[4:7]
+    P1DIR = 0x0f;
 }
 
 void pmodkypd_poll(void)
