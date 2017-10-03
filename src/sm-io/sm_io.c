@@ -7,7 +7,6 @@ void msp430_io_init(void)
 {
     WDTCTL = WDTPW | WDTHOLD;
     uart_init();
-    puts("\n------\n\n");
 }
 
 int putchar(int c)
@@ -15,7 +14,7 @@ int putchar(int c)
     if (c == '\n')
         putchar('\r');
 
-    uart_write_byte(c);
+    uart2_write_byte(c);
     return c;
 }
 
