@@ -18,6 +18,7 @@ set(HEADERS
     sancus_support/pmodcls.h
     sancus_support/pmodkypd.h
     sancus_support/fileio.h
+    sancus_support/sancus_step.h
 )
 
 set(BASE_INSTALL_DIR "${INSTALL_INCLUDES_DIR}/sancus_support")
