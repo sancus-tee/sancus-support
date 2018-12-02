@@ -43,7 +43,7 @@ volatile int      __ss_isr_tar_entry;
             "jmp 2f                                     \n\t"   \
             "1:                                         \n\t"   \
             "; no sm interrupted                        \n\t"   \
-            "mov #0x0, &%2 ;disable timerA              \n\t"   \
+            "mov #0x4, &%2 ;disable timerA              \n\t"   \
             "2: ; cont after if-then-else               \n\t"   \
             "reti                                       \n\t"   \
             ::"m"(TAR),"m"(TACCR0),"m"(TACTL):);
