@@ -9,6 +9,7 @@
 #define INIT_LATENCY            42
 
 void print_latency(void);
+int get_latency(void);
 
 uint16_t __ss_isr_stack[ISR_STACK_SIZE];
 void*    __ss_isr_sp;
