@@ -4,9 +4,13 @@
 #include "timer.h"
 #include <stdint.h>
 
+// note the difference between the decimal and the hexadecimal constants
 #define HW_IRQ_LATENCY          34
 #define ISR_STACK_SIZE          512
 #define INIT_LATENCY            42
+
+#define SANCUS_STEP_ISR(fct) \
+    SANCUS_STEP_ISR_INTERNAL(fct, 0x41, 0x212)
 
 void print_latency(void);
 int get_latency(void);
@@ -30,7 +34,7 @@ volatile int      __ss_isr_tar_entry;
 /*
  * Execute fct after every instruction of the sancus module
  */
-#define SANCUS_STEP_ISR(fct)                                    \
+#define SANCUS_STEP_ISR_INTERNAL(fct, sm_reti_val, ta_enable)   \
     __asm__("mov &%0, &__ss_isr_tar_entry               \n\t"   \
             "cmp #0x0, r1                               \n\t"   \
             "jne 1f                                     \n\t"   \
@@ -39,8 +43,8 @@ volatile int      __ss_isr_tar_entry;
             "push r15                                   \n\t"   \
             "push #0x0                                  \n\t"   \
             "call #" #fct "                             \n\t"   \
-            "mov #0x41, &%1 ; 0x41 is latency of resume \n\t"   \
-            "mov #0x212, &%2 ; 0x212 is TACTL_ENABLE    \n\t"   \
+            "mov #" #sm_reti_val ", &%1                 \n\t"   \
+            "mov #" #ta_enable ", &%2                   \n\t"   \
             "jmp 2f                                     \n\t"   \
             "1:                                         \n\t"   \
             "; no sm interrupted                        \n\t"   \
