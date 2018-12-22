@@ -3,8 +3,13 @@
 #include "uart.h"
 
 #include <stdlib.h>
+#include <stdarg.h>
 #include <string.h>
 #include <stdio.h>
+
+#if __GNUC__ >= 5
+#define vuprintf(a,b,c) 0
+#endif
 
 uint16_t read_int(void)
 {

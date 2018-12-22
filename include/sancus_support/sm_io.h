@@ -34,8 +34,12 @@
 
 void msp430_io_init(void);
 void pr_sm_info(struct SancusModule *sm);
+#if __GNUC__ >= 5
+#else
 int __attribute__((noinline)) putchar(int c);
+#endif
 
+#undef __always_inline
 #define __always_inline static inline __attribute__((always_inline))
 
 #if !(defined(__SANCUS_IO_QUIET) || defined(__SANCUS_IO_BENCH))

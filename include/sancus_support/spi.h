@@ -2,6 +2,7 @@
 #define SANCUS_SUPPORT_SPI_H
 
 #include <stdlib.h>
+#include <stdint.h>
 
 typedef enum
 {

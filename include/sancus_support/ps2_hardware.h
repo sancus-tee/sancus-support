@@ -13,7 +13,11 @@
 #define PS2_RELEASED 0x08
 #define PS2_EXTENDED 0x10
 
+#if __GNUC__ >= 5
+#define PS2_RX_VECTOR 6
+#else
 #define PS2_RX_VECTOR (5 * 2)
+#endif
 
 #endif
 

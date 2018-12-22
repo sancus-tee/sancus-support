@@ -5,11 +5,35 @@
 
 void msp430_io_init(void)
 {
+#if __GNUC__ >= 5
+    setvbuf(stdout, NULL, _IONBF, 0);
+#endif
+
     WDTCTL = WDTPW | WDTHOLD;
     uart_init();
     puts("\n------\n\n");
 }
 
+#if __GNUC__ >= 5
+int __swbuf_r(struct _reent * r, int c, FILE * f)
+{
+    uart_write_byte(c);
+
+    return c;
+}
+
+int _write_r (struct _reent * r, int fd, char *buf, size_t len)
+{
+  int i;
+
+  for (i=0; i<len; i++)
+  {
+    uart_write_byte(buf[i]);
+  }
+
+  return len;
+}
+#else
 int putchar(int c)
 {
     if (c == '\n')
@@ -18,6 +42,7 @@ int putchar(int c)
     uart_write_byte(c);
     return c;
 }
+#endif
 
 void pr_sm_info(struct SancusModule *sm)
 {

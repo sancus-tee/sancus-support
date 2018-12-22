@@ -6,7 +6,11 @@
 #define TACTL_ENABLE        (TASSEL_2 + MC_1 + TAIE)
 #define TACTL_CONTINUOUS    ((TASSEL_2 + MC_2) & ~TAIE)
 
+#if __GNUC__ >= 5
+#define TIMER_IRQ_VECTOR    9 /* IRQ number 8 */
+#else
 #define TIMER_IRQ_VECTOR    16 /* IRQ number 8 */
+#endif
 
 void timer_disable(void);
 

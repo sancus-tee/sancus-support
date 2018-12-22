@@ -205,7 +205,7 @@ enter_sm(CallInfo* ci)
         : "=m"(ret)
         : "r"(args_left), "m"(ci->arg1), "m"(ci->arg2), "m"(ci->arg3),
           "m"(ci->arg4), "m"(ci->index), "m"(ci->entry)
-        : "r6", "r7", "r12", "r13", "r14", "r15");
+        : "6", "7", "12", "13", "14", "15");
 
     return ret;
 }

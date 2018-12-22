@@ -41,8 +41,13 @@
 // Hardware UART interrupt mapping
 //--------------------------------------------------
 
+#if __GNUC__ >= 5
+#define UART_TX_VECTOR 7 // Interrupt vector 6  (0xFFEC)
+#define UART_RX_VECTOR 8 // Interrupt vector 7  (0xFFEE)
+#else
 #define UART_TX_VECTOR (6 *2) // Interrupt vector 6  (0xFFEC)
 #define UART_RX_VECTOR (7 *2) // Interrupt vector 7  (0xFFEE)
+#endif
 
 //--------------------------------------------------
 // Diverse
