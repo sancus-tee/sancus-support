@@ -34,7 +34,7 @@
 
 void msp430_io_init(void);
 void pr_sm_info(struct SancusModule *sm);
-#if __GNUC__ >= 5 || __clang_major_ >= 5
+#if __GNUC__ >= 5 || __clang_major__ >= 5
 #else
 int __attribute__((noinline)) putchar(int c);
 #endif
