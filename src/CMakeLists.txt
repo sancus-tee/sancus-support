@@ -9,6 +9,8 @@ add_definitions(-ffunction-sections)
 
 if(MSP430_GCC_PREFIX STREQUAL msp430-elf)
   include_directories ("${MSPGCC_BASE_DIR}/../include")
+else()
+  add_definitions("-D__${MCU}__")
 endif()
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
