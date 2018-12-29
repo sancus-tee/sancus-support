@@ -17,7 +17,7 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
 option(DEBUG_PRINTS "Enable debug prints")
 
 if (DEBUG_PRINTS)
-    add_definitions("-DDEBUG_PRINTS")
+  add_definitions("-DDEBUG_PRINTS")
 endif ()
 
 add_subdirectory(dev)
