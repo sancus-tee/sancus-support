@@ -11,7 +11,6 @@ if(MSP430_GCC_PREFIX STREQUAL msp430-elf)
   include_directories ("${MSPGCC_BASE_DIR}/../include")
 endif()
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mmcu=${mcu}")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
 
