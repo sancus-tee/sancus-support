@@ -1,17 +1,17 @@
 find_package(Sancus-Compiler REQUIRED)
 find_package(MSPGCC REQUIRED)
 
-set(CMAKE_C_COMPILER ${MSPGCC_EXECUTABLE})
+include(UseMSPGCC)
 
 include_directories ("${PROJECT_SOURCE_DIR}/include/sancus_support")
-if(MSP430_GCC_PREFIX STREQUAL msp430-elf)
-include_directories ("${MSPGCC_BASE_DIR}/../include")
-endif()
 
-add_definitions("-D__MSP430F149__")
 add_definitions(-ffunction-sections)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mmcu=msp430f149")
+if(MSP430_GCC_PREFIX STREQUAL msp430-elf)
+  include_directories ("${MSPGCC_BASE_DIR}/../include")
+endif()
+
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mmcu=${mcu}")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
 
