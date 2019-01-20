@@ -10,7 +10,7 @@
 #define INIT_LATENCY            42
 
 #define SANCUS_STEP_ISR(fct) \
-    SANCUS_STEP_ISR_INTERNAL(fct, 0x41, 0x212)
+    SANCUS_STEP_ISR_INTERNAL(fct, 0x42, 0x212)
 
 void print_latency(void);
 int get_latency(void);
