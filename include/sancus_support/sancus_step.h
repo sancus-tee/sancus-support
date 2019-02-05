@@ -15,6 +15,8 @@
 void print_latency(void);
 int get_latency(void);
 
+const int spy_IRQ_delay;
+
 uint16_t __ss_isr_stack[ISR_STACK_SIZE];
 void*    __ss_isr_sp;
 void*    __ss_isr_reti_addr;

@@ -16,3 +16,13 @@ int get_latency(void)
     TACTL = TACTL_DISABLE;
     return __ss_isr_tar_entry - HW_IRQ_LATENCY - 1;
 }
+
+/* ============TIMING MODULE===========*/
+void SM_ENTRY(spy) spy_enter(void)
+{
+    // Setup interrupt flag
+    __asm__("");
+    // Interrupt routine handles interrupt and resets timer
+    // Save timer value to spy_IRQ_delay upon entry
+    __asm__("mov &%0, &%1":"m"(spy_IRQ_delay):"m"(TAR):);
+}
