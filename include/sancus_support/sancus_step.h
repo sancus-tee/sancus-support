@@ -3,11 +3,17 @@
 #include <msp430.h>
 #include "timer.h"
 #include <stdint.h>
+#include <sancus/sm_support.h>
+
+
+/* ======== SANCUS STEP DBG CONSTANTS ======== */
+#define RETI_LENGTH 0x5
+#define SS_DBG_RECORD_DELAY 0x8
 
 // note the difference between the decimal and the hexadecimal constants
 #define HW_IRQ_LATENCY          34
 #define ISR_STACK_SIZE          512
-#define INIT_LATENCY            42
+#define INIT_LATENCY            0
 
 #define SANCUS_STEP_ISR(fct) \
     SANCUS_STEP_ISR_INTERNAL(fct, 0x42, 0x212)
@@ -15,11 +21,21 @@
 void print_latency(void);
 int get_latency(void);
 
-const int spy_IRQ_delay;
+// new interface
+void sancus_step_start(void);
+void sancus_step_init(void);
+void sancus_step_end(void);
+void sancus_step_isr_main(void);
+
+int ss_dbg_interrupted;
+int ss_dbg_entry_delay;
+int isr_latency;
+
+extern struct SancusModule ssdbg;
+int SM_ENTRY(ssdbg) ss_dbg_get_isr_latency(void);
 
 uint16_t __ss_isr_stack[ISR_STACK_SIZE];
 void*    __ss_isr_sp;
-void*    __ss_isr_reti_addr;
 volatile int      __ss_isr_tar_entry;
 
 /*
@@ -54,6 +70,5 @@ volatile int      __ss_isr_tar_entry;
             "2: ; cont after if-then-else               \n\t"   \
             "reti                                       \n\t"   \
             ::"m"(TAR),"m"(TACCR0),"m"(TACTL):);
-
 
 #endif
