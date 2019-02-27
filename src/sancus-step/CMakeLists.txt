@@ -1,3 +1,6 @@
+set(CMAKE_C_COMPILER sancus-cc)
+set(CMAKE_C_CREATE_STATIC_LIBRARY "sancus-ld --verbose <OBJECTS> -o <TARGET>")
+
 set(SRC
     sancus_step.c
 )
