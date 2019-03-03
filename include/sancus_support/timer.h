@@ -1,12 +1,18 @@
 #ifndef SANCUS_SUPPORT_TIMER_H
 #define SANCUS_SUPPORT_TIMER_H
 #include <msp430.h>
+#include <stdint.h>
 
-#define TACTL_DISABLE       (TACLR)
-#define TACTL_ENABLE        (TASSEL_2 + MC_1 + TAIE)
-#define TACTL_CONTINUOUS    ((TASSEL_2 + MC_2) & ~TAIE)
+#define TACTL_DISABLE       (TACLR) // 0x04
+#define TACTL_ENABLE        (TASSEL_2 + MC_1 + TAIE) // 0x212
+#define TACTL_CONTINUOUS    ((TASSEL_2 + MC_2) & ~TAIE) // 0x220
 
 #define TIMER_IRQ_VECTOR    16 /* IRQ number 8 */
+
+#define ISR_STACK_SIZE (512)
+
+uint16_t __isr_stack[ISR_STACK_SIZE];
+extern void* __isr_sp;
 
 void timer_disable(void);
 
@@ -24,5 +30,20 @@ int  timer_tsc_end(void);
 
 /* Use for reactive OS support (sancus-support/src/main/main.c) */
 void timer_init(void);
+
+
+#define TIMER_ISR_ENTRY(fct)                                        \
+__attribute__((naked)) __attribute__((interrupt(TIMER_IRQ_VECTOR))) \
+void timerA_isr_entry(void)                                         \
+{                                                                   \
+    __asm__ __volatile__(                                           \
+            "mov &__isr_sp, r1\n\t"                                 \
+            "push r15\n\t"                                          \
+            "push #0x0\n\t"                                         \
+            "call #" #fct "\n\t"                                    \
+            "reti\n\t"                                              \
+            :::);                                                   \
+}
+
 
 #endif
