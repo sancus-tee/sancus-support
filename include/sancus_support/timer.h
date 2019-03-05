@@ -37,10 +37,12 @@ __attribute__((naked)) __attribute__((interrupt(TIMER_IRQ_VECTOR))) \
 void timerA_isr_entry(void)                                         \
 {                                                                   \
     __asm__ __volatile__(                                           \
+            "cmp #0x0, r1\n\t"                                      \
+            "jne 1f\n\t"                                            \
             "mov &__isr_sp, r1\n\t"                                 \
             "push r15\n\t"                                          \
             "push #0x0\n\t"                                         \
-            "call #" #fct "\n\t"                                    \
+            "1: call #" #fct "\n\t"                                 \
             "reti\n\t"                                              \
             :::);                                                   \
 }
