@@ -4,15 +4,14 @@
 #include <sancus/sm_support.h>
 #include "sm_io.h"
 
-void print_latency(void)
+void sancus_step_print_latency(void)
 {
-    int latency = get_latency();
+    int latency = sancus_step_get_latency();
     printf("latency: %d\n", latency);
 }
 
-int get_latency(void)
+int sancus_step_get_latency(void)
 {
-    TACTL = TACTL_DISABLE;
     return __ss_isr_tar_entry - sm_exit_latency;
 }
 
@@ -56,7 +55,6 @@ void sancus_step_init(void)
     */
     isr_reti_latency = isr_reti_latency_t
                         - JMP_LENGTH
-                        - RET_LENGTH
                         - RETI_LENGTH
                         + 1;
     
@@ -71,60 +69,6 @@ void sancus_step_init(void)
 void sancus_step_end(void)
 {
     TACTL = TACTL_DISABLE;
-}
-
-__attribute__((naked))
-void sancus_step_isr_main(void)
-{
-    __asm__ __volatile__(
-        "cmp #0x0, &%2\n\t"
-        "jz 1f\n\t"
-        ";sm interrupted\n\t"
-        "cmp #0x0, &%3\n\t"
-        "jz 3f\n\t"
-        "; measuring isr_reti_latency\n\t"
-        "mov #0x4, &%0\n\t"
-        "mov #0x220, &%0\n\t"
-        "jmp 2f\n\t"
-        "3: ; not measuring isr_reti_latency\n\t"
-        "call #print_latency\n\t"
-        "mov #0x4, &%0\n\t"
-        "push r15\n\t"
-        "mov &%4, r15\n\t"
-        "add #0x8, r15 ;\n\t"
-        "mov r15, &%1\n\t"
-        "pop r15\n\t"
-        "mov #0x212, &%0\n\t"
-        "jmp 2f\n\t"
-        "1: ; sm not interrupted\n\t"
-        "call #timer_disable\n\t"
-        "2: ret\n\t"
-        :
-        :
-        "m"(TACTL),
-        "m"(TACCR0),
-        "m"(isr_interrupted_sm),
-        "m"(ss_dbg_measuring_reti_latency),
-        "m"(isr_reti_latency));
-    /*
-    if (isr_interrupted_sm)
-    {
-        if (ss_dbg_measuring_reti_latency)
-        {
-            TACTL = TACTL_DISABLE;
-            TACTL = TACTL_CONTINUOUS;
-        }
-        else
-        {
-            print_latency();
-            timer_irq(isr_reti_latency);
-        }
-    }
-    else
-    {
-        timer_disable();
-    }
-    */
 }
 
 DECLARE_SM(ssdbg, 0x1234);
