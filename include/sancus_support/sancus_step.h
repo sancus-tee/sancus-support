@@ -10,6 +10,8 @@
 #define RETI_LENGTH (0x5)
 #define JMP_LENGTH (0x2)
 
+#define EXTRA_DELAY (0x2)
+
 #define INIT_LATENCY 1
 
 void __ss_print_latency(void);
