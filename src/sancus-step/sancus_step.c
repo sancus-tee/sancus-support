@@ -79,9 +79,9 @@ int SM_ENTRY(ssdbg) __ss_dbg_get_info(void)
     
     __asm__ __volatile__(
                 "mov &%0, &__ss_dbg_entry_delay\n\t"
-                "mov &%0, r15; irq should arrive here\n\t"
+                "mov &%0, r15; 1st irq should arrive here\n\t"
                 "mov %3, &%1\n\t"
-                "mov %2, &%1\n\t"
+                "mov %2, &%1; 2nd irq should arrive here\n\t"
                 "sub #0x1, r15\n\t"
                 "ret\n\t"
                 ::
