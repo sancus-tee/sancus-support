@@ -1,5 +1,7 @@
 #include "timer.h"
 
+void* __isr_sp = (void*) &__isr_stack[ISR_STACK_SIZE-1];
+
 void timer_disable(void)
 {
     TACTL = TACTL_DISABLE;
@@ -17,7 +19,6 @@ void timer_irq(int interval)
 void timer_tsc_start(void)
 {
     TACTL = TACTL_DISABLE;
-    TACCR0 = 0x1;
     TACTL = TACTL_CONTINUOUS;
 }
 

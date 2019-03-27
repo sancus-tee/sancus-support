@@ -3,50 +3,83 @@
 #include <msp430.h>
 #include "timer.h"
 #include <stdint.h>
+#include <sancus/sm_support.h>
 
-#define HW_IRQ_LATENCY          34
-#define ISR_STACK_SIZE          512
-#define INIT_LATENCY            42
 
-void print_latency(void);
+/* ======== SANCUS STEP DBG CONSTANTS ======== */
+#define RETI_LENGTH (0x5)
+#define JMP_LENGTH (0x2)
 
-uint16_t __ss_isr_stack[ISR_STACK_SIZE];
-void*    __ss_isr_sp;
-void*    __ss_isr_reti_addr;
+#define EXTRA_DELAY (0x2)
+
+#define INIT_LATENCY 1
+
+void __ss_print_latency(void);
+int __ss_get_latency(void);
+
+// sancus step interface
+void __ss_start(void);
+void __ss_init(void);
+void __ss_end(void);
+
+// sancus step configuration parameters
+int __ss_dbg_entry_delay;
+int __ss_dbg_measuring_reti_latency;
+int __ss_isr_reti_latency;
+int __ss_sm_exit_latency;
+int __ss_isr_interrupted_sm;
+
+extern struct SancusModule ssdbg;
+int SM_ENTRY(ssdbg) __ss_dbg_get_info(void);
+
 volatile int      __ss_isr_tar_entry;
 
-/*
- * The first latency will be useless, but this is ok for now.
- * We can fix this by adjusting the INIT_LATENCY definition.
- */
-#define SANCUS_STEP_INIT                    \
-    __asm__("dint\n\t");                    \
-    TACTL = TACTL_DISABLE;                  \
-    TACCR0 = INIT_LATENCY;                  \
-    /* source mclk, up mode */              \
-    TACTL = TACTL_ENABLE;
-
-/*
- * Execute fct after every instruction of the sancus module
- */
-#define SANCUS_STEP_ISR(fct)                                    \
-    __asm__("mov &%0, &__ss_isr_tar_entry               \n\t"   \
-            "cmp #0x0, r1                               \n\t"   \
-            "jne 1f                                     \n\t"   \
-            "; sm got interrupted                       \n\t"   \
-            "mov &__ss_isr_sp, r1                       \n\t"   \
-            "push r15                                   \n\t"   \
-            "push #0x0                                  \n\t"   \
-            "call #" #fct "                             \n\t"   \
-            "mov #0x41, &%1 ; 0x41 is latency of resume \n\t"   \
-            "mov #0x212, &%2 ; 0x212 is TACTL_ENABLE    \n\t"   \
-            "jmp 2f                                     \n\t"   \
-            "1:                                         \n\t"   \
-            "; no sm interrupted                        \n\t"   \
-            "mov #0x0, &%2 ;disable timerA              \n\t"   \
-            "2: ; cont after if-then-else               \n\t"   \
-            "reti                                       \n\t"   \
-            ::"m"(TAR),"m"(TACCR0),"m"(TACTL):);
-
+#define SANCUS_STEP_ISR_ENTRY(fct)                                  \
+__attribute__((naked)) __attribute__((interrupt(TIMER_IRQ_VECTOR))) \
+void timerA_isr_entry(void)                                         \
+{                                                                   \
+    __asm__("mov &%0, &%2; save tar\n\t"                            \
+            "mov %9, &%4; disable timer\n\t"                        \
+            "mov #0x0, &%1\n\t"                                     \
+            "cmp #0x0, r1\n\t"                                      \
+            "jne 1f\n\t"                                            \
+            "; sm got interrupted\n\t"                              \
+            "mov #0x1, &%1\n\t"                                     \
+            "mov &%3, r1\n\t"                                       \
+            "push r15\n\t"                                          \
+            "push #0x0\n\t"                                         \
+            "cmp #0x0, &%7\n\t"                                     \
+            "jz 2f\n\t"                                             \
+            "; measuring __ss_isr_reti_latency\n\t"                 \
+            "mov %8, &%4; set timer in continuous mode\n\t"         \
+            "jmp 3f\n\t"                                            \
+            "2: ; not measuring __ss_isr_reti_latency\n\t"          \
+            "call #" #fct "\n\t"                                    \
+            "push r15\n\t"                                          \
+            "mov &%6, r15\n\t"                                      \
+            "add #0x5, r15 ;\n\t"                                   \
+            "mov r15, &%5\n\t"                                      \
+            "pop r15\n\t"                                           \
+            "mov %10, &%4; set timer in interrupt mode (irq)\n\t"   \
+            "jmp 3f\n\t"                                            \
+            "1: ; sm not interrupted\n\t"                           \
+            "mov %9, &%4; disable timer\n\t"                        \
+            "3: reti\n\t"                                           \
+            :                                                       \
+            :                                                       \
+            "m"(TAR),                                               \
+            "m"(__ss_isr_interrupted_sm),                           \
+            "m"(__ss_isr_tar_entry),                                \
+            "m"(__isr_sp),                                          \
+            "m"(TACTL),                                             \
+            "m"(TACCR0),                                            \
+            "m"(__ss_isr_reti_latency),                             \
+            "m"(__ss_dbg_measuring_reti_latency),                   \
+            "i"(TACTL_CONTINUOUS),                                  \
+            "i"(TACTL_DISABLE),                                     \
+            "i"(TACTL_ENABLE)                                       \
+            :                                                       \
+            );                                                      \
+}
 
 #endif
