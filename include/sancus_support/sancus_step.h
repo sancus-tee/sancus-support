@@ -34,6 +34,14 @@ int SM_ENTRY(ssdbg) __ss_dbg_get_info(void);
 
 volatile int      __ss_isr_tar_entry;
 
+#if __clang_major__ >= 5
+  /* TODO: Modern LLVM/Clang generates an interrupt specification
+   *       which is not compatible with modern mspgcc .
+   */
+asm(".section __interrupt_vector_9,\"ax\",@progbits \n\t"
+    ".word timerA_isr_entry                         \n\t");
+#endif
+
 #define SANCUS_STEP_ISR_ENTRY(fct)                                  \
 __attribute__((naked)) __attribute__((interrupt(TIMER_IRQ_VECTOR))) \
 void timerA_isr_entry(void)                                         \
