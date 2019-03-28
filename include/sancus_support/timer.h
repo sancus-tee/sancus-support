@@ -35,9 +35,19 @@ int  timer_tsc_end(void);
 /* Use for reactive OS support (sancus-support/src/main/main.c) */
 void timer_init(void);
 
+#if __clang_major__ < 5
+  #define ATTR_INTERRUPT (__attribute__((interrupt(TIMER_IRQ_VECTOR))))
+#else
+  /* TODO: Modern LLVM/Clang generates an interrupt specification
+   *       which is not compatible with modern mspgcc .
+   */
+  #define ATTR_INTERRUPT
+  asm(".section __interrupt_vector_9,\"ax\",@progbits \n\t"
+      ".word timerA_isr_entry                         \n\t");
+#endif
 
 #define TIMER_ISR_ENTRY(fct)                                        \
-__attribute__((naked)) __attribute__((interrupt(TIMER_IRQ_VECTOR))) \
+__attribute__((naked)) ATTR_INTERRUPT                               \
 void timerA_isr_entry(void)                                         \
 {                                                                   \
     __asm__ __volatile__(                                           \
