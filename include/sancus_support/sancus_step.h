@@ -41,8 +41,6 @@ volatile int      __ss_isr_tar_entry;
    *       which is not compatible with modern mspgcc .
    */
   #define ATTR_INTERRUPT
-  asm(".section __interrupt_vector_9,\"ax\",@progbits \n\t"
-      ".word timerA_isr_entry                         \n\t");
 #endif
 
 #define SANCUS_STEP_ISR_ENTRY(fct)                                  \
