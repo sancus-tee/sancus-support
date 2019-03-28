@@ -42,8 +42,6 @@ void timer_init(void);
    *       which is not compatible with modern mspgcc .
    */
   #define ATTR_INTERRUPT
-  asm(".section __interrupt_vector_9,\"ax\",@progbits \n\t"
-      ".word timerA_isr_entry                         \n\t");
 #endif
 
 #define TIMER_ISR_ENTRY(fct)                                        \
