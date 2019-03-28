@@ -29,21 +29,24 @@ int __ss_isr_reti_latency;
 int __ss_sm_exit_latency;
 int __ss_isr_interrupted_sm;
 
-extern struct SancusModule ssdbg;
-int SM_ENTRY(ssdbg) __ss_dbg_get_info(void);
+extern struct SancusModule sancus_step;
+int SM_ENTRY(sancus_step) __ss_dbg_get_info(void);
 
 volatile int      __ss_isr_tar_entry;
 
-#if __clang_major__ >= 5
+#if __clang_major__ < 5
+  #define ATTR_INTERRUPT (__attribute__((interrupt(TIMER_IRQ_VECTOR))))
+#else
   /* TODO: Modern LLVM/Clang generates an interrupt specification
    *       which is not compatible with modern mspgcc .
    */
-asm(".section __interrupt_vector_9,\"ax\",@progbits \n\t"
-    ".word timerA_isr_entry                         \n\t");
+  #define ATTR_INTERRUPT
+  asm(".section __interrupt_vector_9,\"ax\",@progbits \n\t"
+      ".word timerA_isr_entry                         \n\t");
 #endif
 
 #define SANCUS_STEP_ISR_ENTRY(fct)                                  \
-__attribute__((naked)) __attribute__((interrupt(TIMER_IRQ_VECTOR))) \
+__attribute__((naked)) ATTR_INTERRUPT                               \
 void timerA_isr_entry(void)                                         \
 {                                                                   \
     __asm__("mov &%0, &%2; save tar\n\t"                            \

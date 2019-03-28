@@ -39,7 +39,7 @@ void __ss_start(void)
  */
 void __ss_init(void)
 {
-    sancus_enable(&ssdbg);
+    sancus_enable(&sancus_step);
     
     __ss_dbg_measuring_reti_latency = 1;
     
@@ -71,10 +71,10 @@ void __ss_end(void)
     TACTL = TACTL_DISABLE;
 }
 
-DECLARE_SM(ssdbg, 0x1234);
+DECLARE_SM(sancus_step, 0x1234);
 
 __attribute__((naked))
-int SM_ENTRY(ssdbg) __ss_dbg_get_info(void)
+int SM_ENTRY(sancus_step) __ss_dbg_get_info(void)
 {
     
     __asm__ __volatile__(
