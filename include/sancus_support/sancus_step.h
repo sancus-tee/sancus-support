@@ -11,6 +11,7 @@
 #define JMP_LENGTH (0x2)
 
 #define EXTRA_DELAY (0x2)
+#define ENTRY_DELAY (0x3)
 
 #define INIT_LATENCY 1
 

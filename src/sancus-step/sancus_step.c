@@ -60,7 +60,7 @@ void __ss_init(void)
     
     timer_irq(__ss_dbg_entry_delay + EXTRA_DELAY);
     __ss_dbg_get_info();
-    __ss_sm_exit_latency = __ss_isr_tar_entry - 3;
+    __ss_sm_exit_latency = __ss_isr_tar_entry - ENTRY_DELAY;
     printf("%d, %d, %d\n", __ss_isr_reti_latency, __ss_sm_exit_latency, __ss_dbg_entry_delay);
     
     __ss_dbg_measuring_reti_latency = 0;
@@ -78,8 +78,8 @@ int SM_ENTRY(ssdbg) __ss_dbg_get_info(void)
 {
     
     __asm__ __volatile__(
-                "mov &%0, &__ss_dbg_entry_delay\n\t"
-                "mov &%0, r15; 1st irq should arrive here\n\t"
+                "mov &%0, &__ss_dbg_entry_delay; 1st irq should arrive here\n\t"
+                "mov &%0, r15\n\t"
                 "mov %3, &%1\n\t"
                 "mov %2, &%1; 2nd irq should arrive here\n\t"
                 "sub #0x1, r15\n\t"
