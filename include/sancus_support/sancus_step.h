@@ -35,7 +35,7 @@ int SM_ENTRY(ssdbg) __ss_dbg_get_info(void);
 
 volatile int      __ss_isr_tar_entry;
 
-#define SANCUS_STEP_ISR_ENTRY(fct)                                  \
+#define SANCUS_STEP_ISR_ENTRY(fct_single_step, fct_end)             \
 __attribute__((naked)) __attribute__((interrupt(TIMER_IRQ_VECTOR))) \
 void timerA_isr_entry(void)                                         \
 {                                                                   \
@@ -55,7 +55,7 @@ void timerA_isr_entry(void)                                         \
             "mov %8, &%4; set timer in continuous mode\n\t"         \
             "jmp 3f\n\t"                                            \
             "2: ; not measuring __ss_isr_reti_latency\n\t"          \
-            "call #" #fct "\n\t"                                    \
+            "call #" #fct_single_step "\n\t"                        \
             "push r15\n\t"                                          \
             "mov &%6, r15\n\t"                                      \
             "add #0x5, r15 ;\n\t"                                   \
@@ -66,6 +66,7 @@ void timerA_isr_entry(void)                                         \
             "jmp 3f\n\t"                                            \
             "1: ; sm not interrupted\n\t"                           \
             "mov %9, &%4; disable timer\n\t"                        \
+            "call #" #fct_end "\n\t"                                \
             "3: reti\n\t"                                           \
             :                                                       \
             :                                                       \
@@ -87,7 +88,7 @@ void timerA_isr_entry(void)                                         \
             );                                                      \
 }
 
-#define SANCUS_STEP_ISR_ENTRY2(fct)                                 \
+#define SANCUS_STEP_ISR_ENTRY2(fct_single_step, fct_end)            \
 __attribute__((naked)) __attribute__((interrupt(TIMER_IRQ_VECTOR2)))\
 void timerA_isr_entry2(void)                                        \
 {                                                                   \
@@ -108,7 +109,7 @@ void timerA_isr_entry2(void)                                        \
             "mov %8, &%4; set timer in continuous mode\n\t"         \
             "jmp 3f\n\t"                                            \
             "2: ; not measuring __ss_isr_reti_latency\n\t"          \
-            "call #" #fct "\n\t"                                    \
+            "call #" #fct_single_step "\n\t"                        \
             "push r15\n\t"                                          \
             "mov &%6, r15\n\t"                                      \
             "add #0x6, r15 ;\n\t"                                   \
@@ -119,6 +120,7 @@ void timerA_isr_entry2(void)                                        \
             "jmp 3f\n\t"                                            \
             "1: ; sm not interrupted\n\t"                           \
             "mov %9, &%4; disable timer\n\t"                        \
+            "call #" #fct_end "\n\t"                                \
             "3: reti\n\t"                                           \
             :                                                       \
             :                                                       \
