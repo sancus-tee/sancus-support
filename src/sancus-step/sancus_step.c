@@ -46,7 +46,7 @@ void __ss_init(void)
     timer_tsc_start();
     __ss_dbg_get_info();
     
-    timer_irq(__ss_dbg_entry_delay);
+    timer_irqc(__ss_dbg_entry_delay);
     int isr_reti_latency_t = __ss_dbg_get_info();
     /* amount of cycles in the reti logic = measured delay
                                   - record delay
@@ -58,10 +58,12 @@ void __ss_init(void)
                         - RETI_LENGTH
                         + 1;
     
-    timer_irq(__ss_dbg_entry_delay + EXTRA_DELAY);
+    timer_irqc(__ss_dbg_entry_delay + EXTRA_DELAY);
     __ss_dbg_get_info();
     __ss_sm_exit_latency = __ss_isr_tar_entry - ENTRY_DELAY;
-    printf("%d, %d, %d\n", __ss_isr_reti_latency, __ss_sm_exit_latency, __ss_dbg_entry_delay);
+    printf("resume latency: %d\n", __ss_isr_reti_latency);
+    printf("exit latency: %d\n", __ss_sm_exit_latency);
+    printf("entry delay: %d\n", __ss_dbg_entry_delay);
     
     __ss_dbg_measuring_reti_latency = 0;
 }

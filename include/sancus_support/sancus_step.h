@@ -44,8 +44,8 @@ volatile int      __ss_isr_tar_entry;
   #define ATTR_INTERRUPT
 #endif
 
-#define SANCUS_STEP_ISR_ENTRY(fct)                                  \
-__attribute__((naked)) ATTR_INTERRUPT                               \
+#define SANCUS_STEP_ISR_ENTRY(fct_single_step, fct_end)             \
+__attribute__((naked)) __attribute__((interrupt(TIMER_IRQ_VECTOR))) \
 void timerA_isr_entry(void)                                         \
 {                                                                   \
     __asm__("mov &%0, &%2; save tar\n\t"                            \
@@ -64,16 +64,18 @@ void timerA_isr_entry(void)                                         \
             "mov %8, &%4; set timer in continuous mode\n\t"         \
             "jmp 3f\n\t"                                            \
             "2: ; not measuring __ss_isr_reti_latency\n\t"          \
-            "call #" #fct "\n\t"                                    \
+            "call #" #fct_single_step "\n\t"                        \
             "push r15\n\t"                                          \
             "mov &%6, r15\n\t"                                      \
             "add #0x5, r15 ;\n\t"                                   \
             "mov r15, &%5\n\t"                                      \
             "pop r15\n\t"                                           \
-            "mov %10, &%4; set timer in interrupt mode (irq)\n\t"   \
+            "mov %11, &%12; set timer in interrupt mode (irqc)\n\t" \
+            "mov %13, &%4; set timer in interrupt mode 2 (irqc)\n\t"\
             "jmp 3f\n\t"                                            \
             "1: ; sm not interrupted\n\t"                           \
             "mov %9, &%4; disable timer\n\t"                        \
+            "call #" #fct_end "\n\t"                                \
             "3: reti\n\t"                                           \
             :                                                       \
             :                                                       \
@@ -87,7 +89,64 @@ void timerA_isr_entry(void)                                         \
             "m"(__ss_dbg_measuring_reti_latency),                   \
             "i"(TACTL_CONTINUOUS),                                  \
             "i"(TACTL_DISABLE),                                     \
-            "i"(TACTL_ENABLE)                                       \
+            "i"(TACTL_ENABLE),                                      \
+            "i"(TACCTL_ENABLE_CONT),                                \
+            "m"(TACCTL0),                                           \
+            "i"(TACTL_ENABLE_CONT)                                  \
+            :                                                       \
+            );                                                      \
+}
+
+#define SANCUS_STEP_ISR_ENTRY2(fct_single_step, fct_end)            \
+__attribute__((naked)) __attribute__((interrupt(TIMER_IRQ_VECTOR2)))\
+void timerA_isr_entry2(void)                                        \
+{                                                                   \
+    __asm__("mov &%0, &%2; save tar\n\t"                            \
+            "mov %9, &%4; disable timer\n\t"                        \
+            "sub &%5, &%2; subtract TACCR0 from timestamp\n\t"      \
+            "mov #0x0, &%1\n\t"                                     \
+            "cmp #0x0, r1\n\t"                                      \
+            "jne 1f\n\t"                                            \
+            "; sm got interrupted\n\t"                              \
+            "mov #0x1, &%1\n\t"                                     \
+            "mov &%3, r1\n\t"                                       \
+            "push r15\n\t"                                          \
+            "push #0x0\n\t"                                         \
+            "cmp #0x0, &%7\n\t"                                     \
+            "jz 2f\n\t"                                             \
+            "; measuring __ss_isr_reti_latency\n\t"                 \
+            "mov %8, &%4; set timer in continuous mode\n\t"         \
+            "jmp 3f\n\t"                                            \
+            "2: ; not measuring __ss_isr_reti_latency\n\t"          \
+            "call #" #fct_single_step "\n\t"                        \
+            "push r15\n\t"                                          \
+            "mov &%6, r15\n\t"                                      \
+            "add #0x6, r15 ;\n\t"                                   \
+            "mov r15, &%5\n\t"                                      \
+            "pop r15\n\t"                                           \
+            "mov %11, &%12; set timer in interrupt mode (irqc)\n\t" \
+            "mov %13, &%4; set timer in interrupt mode 2 (irqc)\n\t"\
+            "jmp 3f\n\t"                                            \
+            "1: ; sm not interrupted\n\t"                           \
+            "mov %9, &%4; disable timer\n\t"                        \
+            "call #" #fct_end "\n\t"                                \
+            "3: reti\n\t"                                           \
+            :                                                       \
+            :                                                       \
+            "m"(TAR),                                               \
+            "m"(__ss_isr_interrupted_sm),                           \
+            "m"(__ss_isr_tar_entry),                                \
+            "m"(__isr_sp),                                          \
+            "m"(TACTL),                                             \
+            "m"(TACCR0),                                            \
+            "m"(__ss_isr_reti_latency),                             \
+            "m"(__ss_dbg_measuring_reti_latency),                   \
+            "i"(TACTL_CONTINUOUS),                                  \
+            "i"(TACTL_DISABLE),                                     \
+            "i"(TACTL_ENABLE),                                      \
+            "i"(TACCTL_ENABLE_CONT),                                \
+            "m"(TACCTL0),                                           \
+            "i"(TACTL_ENABLE_CONT)                                  \
             :                                                       \
             );                                                      \
 }

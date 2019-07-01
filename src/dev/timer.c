@@ -12,13 +12,24 @@ void timer_irq(int interval)
     TACTL = TACTL_DISABLE;
     /* 1 cycle overhead TACTL write */
     TACCR0 = interval - 1;
+    TACCTL0 = TACCTL_DISABLE;
     /* source mclk, up mode */
     TACTL = TACTL_ENABLE;
+}
+
+void timer_irqc(int interval)
+{
+    TACTL = TACTL_DISABLE;
+    TACCR0 = interval;
+    TACCTL0 = TACCTL_ENABLE_CONT;
+    TACTL = TACTL_CONTINUOUS;
 }
 
 void timer_tsc_start(void)
 {
     TACTL = TACTL_DISABLE;
+    TACCR0 = 0;
+    TACCTL0 = TACCTL_DISABLE;
     TACTL = TACTL_CONTINUOUS;
 }
 
