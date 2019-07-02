@@ -30,7 +30,7 @@ void __ss_start(void)
 {
     __ss_init();
     __asm__("dint\n\t");
-    timer_irq(INIT_LATENCY);
+    timer_irqc(INIT_LATENCY);
 }
 
 /*
