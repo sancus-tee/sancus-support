@@ -37,15 +37,17 @@ volatile int      __ss_isr_tar_entry;
 
 #if __clang_major__ < 5
   #define ATTR_INTERRUPT (__attribute__((interrupt(TIMER_IRQ_VECTOR))))
+  #define ATTR_INTERRUPT2 (__attribute__((interrupt(TIMER_IRQ_VECTOR))))
 #else
   /* TODO: Modern LLVM/Clang generates an interrupt specification
    *       which is not compatible with modern mspgcc .
    */
   #define ATTR_INTERRUPT
+  #define ATTR_INTERRUPT2
 #endif
 
 #define SANCUS_STEP_ISR_ENTRY(fct_single_step, fct_end)             \
-__attribute__((naked)) __attribute__((interrupt(TIMER_IRQ_VECTOR))) \
+__attribute__((naked)) ATTR_INTERRUPT                               \
 void timerA_isr_entry(void)                                         \
 {                                                                   \
     __asm__("mov &%0, &%2; save tar\n\t"                            \
@@ -98,7 +100,7 @@ void timerA_isr_entry(void)                                         \
 }
 
 #define SANCUS_STEP_ISR_ENTRY2(fct_single_step, fct_end)            \
-__attribute__((naked)) __attribute__((interrupt(TIMER_IRQ_VECTOR2)))\
+__attribute__((naked)) ATTR_INTERRUPT2                              \
 void timerA_isr_entry2(void)                                        \
 {                                                                   \
     __asm__("mov &%0, &%2; save tar\n\t"                            \
