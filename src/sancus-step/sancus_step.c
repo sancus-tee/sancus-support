@@ -66,6 +66,13 @@ void __ss_init(void)
     printf("entry delay: %d\n", __ss_dbg_entry_delay);
     
     __ss_dbg_measuring_reti_latency = 0;
+
+#if __clang_major__ >= 5
+    // TODO: The measurement of the exit latency as implemented by
+    //       Sven Cuyt does not seem to work. For now, overwrite the 
+    //       measurement with a hardcoded value.
+    __ss_sm_exit_latency = 35 /* cycles */;
+#endif
 }
 
 void __ss_end(void)
@@ -81,10 +88,18 @@ int SM_ENTRY(sancus_step) __ss_dbg_get_info(void)
     
     __asm__ __volatile__(
                 "mov &%0, &__ss_dbg_entry_delay; 1st irq should arrive here\n\t"
+#if __clang_major__ >= 5
+                "mov &%0, r12\n\t"
+#else
                 "mov &%0, r15\n\t"
+#endif
                 "mov %3, &%1\n\t"
                 "mov %2, &%1; 2nd irq should arrive here\n\t"
+#if __clang_major__ >= 5
+                "sub #0x1, r12\n\t"
+#else
                 "sub #0x1, r15\n\t"
+#endif
                 "ret\n\t"
                 ::
                 "m"(TAR), "m"(TACTL),
