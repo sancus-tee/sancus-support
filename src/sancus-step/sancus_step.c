@@ -29,6 +29,11 @@ int __ss_isr_interrupted_sm = 0;
 void __ss_start(void)
 {
     __ss_init();
+    __ss_mount();
+}
+
+void __ss_mount(void)
+{
     __asm__("dint\n\t");
     timer_irqc(INIT_LATENCY);
 }
