@@ -22,7 +22,7 @@ int __ss_get_latency(void);
 void __ss_start(void);
 void __ss_init(void);
 void __ss_end(void);
-void __ss_mount(void);
+void __ss_mount(const char * trace);
 
 // sancus step configuration parameters
 int __ss_dbg_entry_delay;

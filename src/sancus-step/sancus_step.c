@@ -29,11 +29,14 @@ int __ss_isr_interrupted_sm = 0;
 void __ss_start(void)
 {
     __ss_init();
-    __ss_mount();
+    __ss_mount(NULL);
 }
 
-void __ss_mount(void)
+void __ss_mount(const char * trace)
 {
+    if (trace != NULL)
+      printf("ss_mount: %s\n", trace);
+
     __asm__("dint\n\t");
     timer_irqc(INIT_LATENCY);
 }
