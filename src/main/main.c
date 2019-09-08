@@ -60,7 +60,11 @@ int main()
     while (1) {}
 }
 
+#if __GNUC__ >= 5
+int __swbuf_r(struct _reent * r, int c, FILE * f)
+#else
 int putchar(int c)
+#endif
 {
     if (c == '\n')
         uart2_write_byte('\r');

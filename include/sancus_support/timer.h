@@ -10,8 +10,13 @@
 #define TACCTL_ENABLE_CONT  (CM_1 + CCIS_0 + SCS + CCIE)
 #define TACCTL_DISABLE      (0)
 
+#if __GNUC__ >= 5
+#define TIMER_IRQ_VECTOR    9  /* IRQ number 8 */
+#define TIMER_IRQ_VECTOR2   10 /* IRQ number 9 */
+#else
 #define TIMER_IRQ_VECTOR    16 /* IRQ number 8 */
 #define TIMER_IRQ_VECTOR2   18 /* IRQ number 9 */
+#endif
 
 #define ISR_STACK_SIZE (512)
 
@@ -41,9 +46,17 @@ int  timer_tsc_end(void);
 /* Use for reactive OS support (sancus-support/src/main/main.c) */
 void timer_init(void);
 
+#if __clang_major__ < 5
+  #define ATTR_INTERRUPT (__attribute__((interrupt(TIMER_IRQ_VECTOR))))
+#else
+  /* TODO: Modern LLVM/Clang generates an interrupt specification
+   *       which is not compatible with modern mspgcc .
+   */
+  #define ATTR_INTERRUPT
+#endif
 
 #define TIMER_ISR_ENTRY(fct)                                        \
-__attribute__((naked)) __attribute__((interrupt(TIMER_IRQ_VECTOR))) \
+__attribute__((naked)) ATTR_INTERRUPT                               \
 void timerA_isr_entry(void)                                         \
 {                                                                   \
     __asm__ __volatile__(                                           \

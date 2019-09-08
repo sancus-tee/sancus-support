@@ -1,10 +1,17 @@
 #include "pmem.h"
 
+#include <stdint.h>
+
 #define HEAP_END 0xffe0
 
 extern char _etext;
+#if __GNUC__ >= 5
+extern char __dataend;
+static uintptr_t heap = (uintptr_t)&__dataend;
+#else
 extern char __data_end_rom;
 static uintptr_t heap = (uintptr_t)&__data_end_rom;
+#endif
 
 // TODO implement something that isn't completely ridiculous :-)
 void* pmem_malloc(size_t size)

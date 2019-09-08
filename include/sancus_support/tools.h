@@ -2,6 +2,7 @@
 #define SANCUS_SUPPORT_TOOLS_H
 
 #include <stdlib.h>
+#include <stdint.h>
 
 uint16_t read_int(void);
 void write_int(uint16_t i);
