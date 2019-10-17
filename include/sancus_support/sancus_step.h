@@ -48,17 +48,17 @@ void timerA_isr_entry2(void)                                                   \
         "sub &%5, &%2\n\t"                                                     \
         /* __ss_isr_interrupted_sm = false */                                  \
         "mov #0x0, &%1\n\t"                                                    \
-        /* check whether r1 register is set (0 if module got interrupted?) */  \
+        /* check whether r1 register is set (0 if module got interrupted) */   \
         "cmp #0x0, r1\n\t"                                                     \
-        /* if module was not interrupted, jump to label "1" */                 \
+        /* if module was not interrupted, jump to label "1" (call end fn) */   \
         "jne 1f\n\t"                                                           \
         /* __ss_isr_interrupted_sm = true */                                   \
         "mov #0x1, &%1\n\t"                                                    \
         /* r1 = __isr_sp */                                                    \
         "mov &%3, r1\n\t"                                                      \
-        /*  */                                                                 \
+        /* push r15 to stack */                                                \
         "push r15\n\t"                                                         \
-        /*  */                                                                 \
+        /* push 0 to stack */                                                  \
         "push #0x0\n\t"                                                        \
         /* check whether __ss_dbg_measuring_reti_latency is set */             \
         "cmp #0x0, &%7\n\t"                                                    \
@@ -72,7 +72,7 @@ void timerA_isr_entry2(void)                                                   \
         "2: \n\t"                                                              \
         /* call the first function parameter */                                \
         "call #" #fct_single_step "\n\t"                                       \
-        /*  */                                                                 \
+        /* push r15 to stack */                                                \
         "push r15\n\t"                                                         \
         /* r15 = __ss_isr_reti_latency */                                      \
         "mov &%6, r15\n\t"                                                     \
@@ -80,7 +80,7 @@ void timerA_isr_entry2(void)                                                   \
         "add #0x6, r15 ;\n\t"                                                  \
         /* TACCR0 = r15 */                                                     \
         "mov r15, &%5\n\t"                                                     \
-        /*  */                                                                 \
+        /* pop the stack top to r15 */                                         \
         "pop r15\n\t"                                                          \
         /* TACCTL0 = TACCTL_ENABLE_CONT */                                     \
         "mov %11, &%12\n\t"                                                    \

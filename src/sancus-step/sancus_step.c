@@ -17,6 +17,7 @@ int __ss_get_latency(void)
 
 int __ss_dbg_entry_delay = 0;
 int __ss_dbg_measuring_reti_latency = 0;
+int __ss_dbg_init_done = 0;
 int __ss_isr_reti_latency = 0;
 int __ss_sm_exit_latency = 0;
 int __ss_isr_interrupted_sm = 0;
@@ -28,7 +29,9 @@ int __ss_isr_interrupted_sm = 0;
  */
 void __ss_start(void)
 {
-    __ss_init();
+    if (__ss_dbg_init_done == 0) {
+        __ss_init();
+    }
     __asm__("dint\n\t"); // disable interrupts
     timer_irqc(INIT_LATENCY);
 }
@@ -66,6 +69,7 @@ void __ss_init(void)
     printf("entry delay: %d\n", __ss_dbg_entry_delay);
 
     __ss_dbg_measuring_reti_latency = 0;
+    __ss_dbg_init_done = 1;
 }
 
 void __ss_end(void)
