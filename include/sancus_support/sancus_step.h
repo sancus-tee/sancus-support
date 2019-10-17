@@ -20,7 +20,6 @@ int __ss_get_latency(void);
 
 // sancus step interface
 void __ss_start(void);
-void __ss_init(void);
 void __ss_end(void);
 
 // sancus step configuration parameters

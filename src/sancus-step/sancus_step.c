@@ -23,20 +23,6 @@ int __ss_sm_exit_latency = 0;
 int __ss_isr_interrupted_sm = 0;
 
 /*
- * Determines isr_reti_latency (reti into interrupted module)
- * and sm_exit_latency (from interrupt to isr)
- * and starts timer, so that nemesis can be executed
- */
-void __ss_start(void)
-{
-    if (__ss_dbg_init_done == 0) {
-        __ss_init();
-    }
-    __asm__("dint\n\t"); // disable interrupts
-    timer_irqc(INIT_LATENCY);
-}
-
-/*
  * Determines isr_reti_latency (reti into interrupted moduled)
  * and sm_exit_latency (from interrupt to isr)
  */
@@ -70,6 +56,20 @@ void __ss_init(void)
 
     __ss_dbg_measuring_reti_latency = 0;
     __ss_dbg_init_done = 1;
+}
+
+/*
+ * Determines isr_reti_latency (reti into interrupted module)
+ * and sm_exit_latency (from interrupt to isr)
+ * and starts timer, so that nemesis can be executed
+ */
+void __ss_start(void)
+{
+    if (__ss_dbg_init_done == 0) {
+        __ss_init();
+    }
+    __asm__("dint\n\t"); // disable interrupts
+    timer_irqc(INIT_LATENCY);
 }
 
 void __ss_end(void)
