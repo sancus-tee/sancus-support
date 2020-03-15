@@ -15,11 +15,13 @@ int __ss_get_latency(void)
     return __ss_isr_tar_entry - __ss_sm_exit_latency;
 }
 
-int __ss_dbg_entry_delay = 0;
-int __ss_dbg_measuring_reti_latency = 0;
-int __ss_isr_reti_latency = 0;
-int __ss_sm_exit_latency = 0;
-int __ss_isr_interrupted_sm = 0;
+extern int __ss_dbg_entry_delay = 0;
+extern int __ss_dbg_measuring_reti_latency = 0;
+extern int __ss_isr_reti_latency = 0;
+extern int __ss_sm_exit_latency = 0;
+extern int __ss_isr_interrupted_sm = 0;
+
+volatile int __ss_isr_tar_entry;
 
 /*
  * Determines isr_reti_latency (reti into interrupted module)

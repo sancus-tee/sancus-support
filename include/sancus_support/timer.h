@@ -20,7 +20,7 @@
 
 #define ISR_STACK_SIZE (512)
 
-uint16_t __isr_stack[ISR_STACK_SIZE];
+extern uint16_t __isr_stack[ISR_STACK_SIZE];
 extern void* __isr_sp;
 
 void timer_disable(void);

@@ -1,5 +1,6 @@
 #include "timer.h"
 
+uint16_t __isr_stack[ISR_STACK_SIZE];
 void* __isr_sp = (void*) &__isr_stack[ISR_STACK_SIZE-1];
 
 void timer_disable(void)

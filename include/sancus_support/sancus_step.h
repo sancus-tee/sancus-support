@@ -25,16 +25,16 @@ void __ss_end(void);
 void __ss_mount(const char * trace);
 
 // sancus step configuration parameters
-int __ss_dbg_entry_delay;
-int __ss_dbg_measuring_reti_latency;
-int __ss_isr_reti_latency;
-int __ss_sm_exit_latency;
-int __ss_isr_interrupted_sm;
+extern int __ss_dbg_entry_delay;
+extern int __ss_dbg_measuring_reti_latency;
+extern int __ss_isr_reti_latency;
+extern int __ss_sm_exit_latency;
+extern int __ss_isr_interrupted_sm;
 
 extern struct SancusModule sancus_step;
 int SM_ENTRY(sancus_step) __ss_dbg_get_info(void);
 
-volatile int      __ss_isr_tar_entry;
+extern volatile int __ss_isr_tar_entry;
 
 #if __clang_major__ < 5
   #define ATTR_INTERRUPT (__attribute__((interrupt(TIMER_IRQ_VECTOR))))
