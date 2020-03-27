@@ -1,6 +1,7 @@
 #ifndef SANCUS_STEP_H
 #define SANCUS_STEP_H
 #include <msp430.h>
+#include "dma_attacker.h"
 #include "timer.h"
 #include <stdint.h>
 #include <sancus/sm_support.h>
@@ -9,6 +10,7 @@
 /* ======== SANCUS STEP DBG CONSTANTS ======== */
 #define RETI_LENGTH (0x5)
 #define JMP_LENGTH (0x2)
+#define DMA_MOV_LENGTH (0x6)
 
 #define EXTRA_DELAY (0x2)
 #define ENTRY_DELAY (0x3)
@@ -22,12 +24,17 @@ int __ss_get_latency(void);
 void __ss_start(void);
 void __ss_end(void);
 
+void __ss_set_dma_attacker_delay(int delay);
+
 // sancus step configuration parameters
 int __ss_dbg_entry_delay;
 int __ss_dbg_measuring_reti_latency;
 int __ss_isr_reti_latency;
 int __ss_sm_exit_latency;
 int __ss_isr_interrupted_sm;
+
+// delay for DMA attacker peripheral
+int __ss_dma_attacker_delay;
 
 extern struct SancusModule ssdbg;
 int SM_ENTRY(ssdbg) __ss_dbg_get_info(void);
@@ -75,8 +82,8 @@ void timerA_isr_entry2(void)                                                   \
         "push r15\n\t"                                                         \
         /* r15 = __ss_isr_reti_latency */                                      \
         "mov &%6, r15\n\t"                                                     \
-        /* r15 += 6 */                                                         \
-        "add #0x6, r15 ;\n\t"                                                  \
+        /* r15 += 12 */                                                        \
+        "add #0xc, r15 ;\n\t"                                                  \
         /* TACCR0 = r15 */                                                     \
         "mov r15, &%5\n\t"                                                     \
         /* pop the stack top to r15 */                                         \
@@ -93,8 +100,10 @@ void timerA_isr_entry2(void)                                                   \
         "mov %9, &%4; disable timer\n\t"                                       \
         /* call the second function parameter */                               \
         "call #" #fct_end "\n\t"                                               \
+        /* set DMA countdown timer */                                          \
+        "3: mov &%14, %15\n\t"                                                   \
         /* return from the ISR */                                              \
-        "3: reti\n\t"                                                          \
+        "reti\n\t"                                                          \
         :                                                                      \
         :                                                                      \
         "m"(TAR),                                                    /* %0 */  \
@@ -110,7 +119,9 @@ void timerA_isr_entry2(void)                                                   \
         "i"(TACTL_ENABLE),                                           /* %10 */ \
         "i"(TACCTL_ENABLE_CONT),                                     /* %11 */ \
         "m"(TACCTL0),                                                /* %12 */ \
-        "i"(TACTL_ENABLE_CONT)                                       /* %13 */ \
+        "i"(TACTL_ENABLE_CONT),                                      /* %13 */ \
+        "m"(__ss_dma_attacker_delay),                                /* %14 */ \
+        "m"(DMA_COUNTDOWN)                                           /* %15 */ \
         :                                                                      \
     );                                                                         \
 }
