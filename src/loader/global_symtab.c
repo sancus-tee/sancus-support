@@ -21,7 +21,12 @@ static SymbolList* dynamic_symbols_head = NULL;
 
 static int symbol_matches(const Symbol* sym, const char* name)
 {
-    return strcmp(sym->name, name) == 0;
+    int len = strlen(sym->name);
+
+    //fix: ignore weird additional space characters of sym->name
+    for(; len > 0 && sym->name[len - 1] < 33; len--);
+
+    return strncmp(sym->name, name, len) == 0;
 }
 
 size_t symtab_get_num_symbols()
