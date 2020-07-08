@@ -22,6 +22,8 @@ int __ss_isr_reti_latency = 0;
 int __ss_sm_exit_latency = 0;
 int __ss_isr_interrupted_sm = 0;
 
+int __ss_dma_attacker_delay = 0xFFFF;
+
 /*
  * Determines isr_reti_latency (reti into interrupted moduled)
  * and sm_exit_latency (from interrupt to isr)
@@ -45,6 +47,7 @@ void __ss_init(void)
     __ss_isr_reti_latency = isr_reti_latency_t
                         - JMP_LENGTH
                         - RETI_LENGTH
+                        - DMA_MOV_LENGTH
                         + 1;
 
     timer_irqc(__ss_dbg_entry_delay + EXTRA_DELAY);
@@ -70,6 +73,11 @@ void __ss_start(void)
     }
     __asm__("dint\n\t"); // disable interrupts
     timer_irqc(INIT_LATENCY);
+}
+
+void __ss_set_dma_attacker_delay(int delay)
+{
+    __ss_dma_attacker_delay = delay + __ss_isr_reti_latency + RETI_LENGTH - 1;
 }
 
 void __ss_end(void)

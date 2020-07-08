@@ -1,4 +1,5 @@
 set(HEADERS
+    sancus_support/dma_attacker.h
     sancus_support/elf.h
     sancus_support/event_loop.h
     sancus_support/global_symtab.h
