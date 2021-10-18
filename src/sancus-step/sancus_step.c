@@ -114,3 +114,9 @@ int SM_ENTRY(ssdbg) __ss_dbg_get_info(void)
         :
     );
 }
+
+void SM_ENTRY(ssdbg) __ss_dbg_exit(void)
+{
+    /* NOTE: only SM 1 can exit on Aion */
+    FINISH();
+}

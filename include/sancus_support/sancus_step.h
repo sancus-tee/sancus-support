@@ -38,6 +38,7 @@ int __ss_dma_attacker_delay;
 
 extern struct SancusModule ssdbg;
 int SM_ENTRY(ssdbg) __ss_dbg_get_info(void);
+void SM_ENTRY(ssdbg) __ss_dbg_exit(void);
 
 volatile int __ss_isr_tar_entry;
 

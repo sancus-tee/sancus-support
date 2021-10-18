@@ -32,6 +32,12 @@
 #endif
 #define ASSERT(cond) BUG_ON(!(cond))
 
+#define FINISH()                                    \
+  do {                                              \
+    puts("all done; exiting..");                    \
+    EXIT();                                         \
+  } while(0)
+
 void msp430_io_init(void);
 void pr_sm_info(struct SancusModule *sm);
 int __attribute__((noinline)) putchar(int c);
