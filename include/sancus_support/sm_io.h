@@ -11,11 +11,16 @@
 #define pr_info2(str, a1, a2)       printf2(INFO_STR(str), a1, a2)
 #define pr_info3(str, a1, a2, a3)   printf3(INFO_STR(str), a1, a2, a3)
 
-#define EXIT()                                      \
-  do {                                              \
-    /* set CPUOFF bit in status register */         \
-    asm("bis #0x210, r2");                          \
-    while(1);                                       \
+#define EXIT()                                                 \
+  do {                                                         \
+    /* set CPUOFF bit in status register */                    \
+    asm("bis #0x210, r2");                                     \
+    asm("nop");                                                \
+    /* Aion ignores CPUOFF outside SM1 -> trigger violation */ \
+    asm("mov #10, r15");                                       \
+    asm(".word 0x1389"); /* nested clix not allowed */         \
+    asm(".word 0x1389");                                       \
+    while(1);                                                  \
   } while(0)
 
 #ifndef __SANCUS_IO_BENCH
