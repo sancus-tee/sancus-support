@@ -28,6 +28,7 @@ if(SLLVM_INSTALL_DIR)
  set (SLLVM_TRANSFORM_FLAGS
       --load ${SLLVM_INSTALL_DIR}/lib/SLLVM.so
       --sllvm-transform
+      --enable-new-pm=0
  )
 
  set (SANCUS_TRANSFORM_FLAGS
@@ -36,6 +37,7 @@ if(SLLVM_INSTALL_DIR)
   --key-size ${SANCUS_SECURITY}
   --stack-size ${STACK_SIZE}
   --vendor-id ${VENDOR_ID}
+  --enable-new-pm=0
  )
 
  set (LLCFLAGS
